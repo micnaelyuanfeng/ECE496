@@ -4,30 +4,37 @@
 #include "Adafruit_ServoHAT.h"
 
 
-double angleToDutyCycleLookupTable[37];
+int angleToPulseLengthLookupTable[181];
 
-void init_angle_to_duty_cycle_lookup_table(){
+void init_angle_to_pulse_length_lookup_table(){
 	int i;
-	for (i = 0; i < 37; i++){
-		//0.1ms = 9 degrees -> 5 degrees = 0.06ms -> 3 degrees = 0.0333
-		angleToDutyCycleLookupTable[i] = 0.5 + i * 0.0556 ;
+	for (i = 0; i < 181; i++){
+		// 0 -> 500, 180 -> 2500, 90 -> 1500
+		angleToPulseLengthLookupTable[i] = (int)(500 + i * 11.1111111+0.5);
 	}
 	printf("******Angle To Duty Cycle Lookup Table******\n");
-	printf("Index\tAngle\tDuty Cycle Length\t\n");
-	for (i = 0; i < 37; i++){
-		printf("%d\t%d\t%f\n", i, i*5, angleToDutyCycleLookupTable[i]);
+	printf("Index\tAngle\tPulse Length\t\n");
+	for (i = 0; i < 181; i++){
+		printf("%d\t%d\t%d\n", i, i, angleToPulseLengthLookupTable[i]);
 	}		  
 }
 
-uint16_t angle_to_duty_cycle_percentage_converter(double * ptLookupTable, uint8_t angleDegree){
-	double dutyCycleLength = ptLookupTable[angleDegree/5];
-	double dutyCyclePercentage = ((dutyCycleLength + 0.00005)/ 20) * 4096;
-	return (uint16_t)dutyCyclePercentage;
 
+
+int pulse_length_to_tick_converter(int frequency, int pulseLength){
+	double periodLength = (1.0 / frequency) * 1000000;
+	double timePerTick = periodLength / 4096.0;
+	double tick = pulseLength / timePerTick;
+printf("hi %d %f %f %f\n", frequency, periodLength, timePerTick, tick);
+	return ((int)tick);
 }
 
-void set_servo(uint8_t hwAddress, uint8_t pwmChannel, uint8_t angleDegree){
-	uint16_t offTime = angle_to_duty_cycle_percentage_converter(angleToDutyCycleLookupTable, angleDegree);
+void set_servo(uint8_t hwAddress, uint8_t pwmChannel, int frequency, int angleDegree){
+	if(angleDegree < 0 || angleDegree > 180){
+		printf("angle %d is out of servo range. Exit....\n", angleDegree);
+		exit(1);
+	}
+	int pulseLength = angleToPulseLengthLookupTable[angleDegree];
+	uint16_t offTime = (uint16_t)pulse_length_to_tick_converter(frequency, pulseLength);
 	set_PWM_PCA9685(hwAddress, pwmChannel, 0, offTime);	
 }
-

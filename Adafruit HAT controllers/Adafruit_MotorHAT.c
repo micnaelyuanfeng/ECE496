@@ -10,8 +10,8 @@ void set_speed_DC_motor(uint8_t hwAddress, uint8_t pwmChannel, int motorSpeed){
 	}else if (motorSpeed > 255){
 		motorSpeed = 255;
 	}
-	
-	set_PWM_PCA9685(hwAddress, pwmChannel, (uint16_t)0, (uint16_t)(motorSpeed*16));	
+	uint8_t pwmPin = PWM_channel_to_PWM_pin_converter_DC_motor(pwmChannel);
+	set_PWM_PCA9685(hwAddress, pwmPin, (uint16_t)0, (uint16_t)(motorSpeed*16));	
 }
 
 void set_direction_DC_motor(uint8_t hwAddress, uint8_t pwmChannel, int motorDirection){

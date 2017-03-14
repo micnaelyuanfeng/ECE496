@@ -11,10 +11,6 @@
 */
 
 void init_PCA9685(uint8_t hwAddress){
-uint8_t mode1Statusold = readByte_PCA9685(hwAddress, MODE1);
-printf("mode1init : %d\n", mode1Statusold);
-
-
 	// Reset all PWM Channels 
 	writeByte_PCA9685(hwAddress, ALL_LED_ON_L, (uint8_t)(0&0xFF));
 	writeByte_PCA9685(hwAddress, ALL_LED_ON_H, (uint8_t)(0>>8));
@@ -26,7 +22,6 @@ printf("mode1init : %d\n", mode1Statusold);
     	writeByte_PCA9685(hwAddress, MODE1, ALLCALL);
 	usleep(5000); // Wait for oscillator
 	uint8_t mode1Status = readByte_PCA9685(hwAddress, MODE1);
-printf("mode1init : %d\n", mode1Status);
 	mode1Status = mode1Status & ~SLEEP;// Reset Sleep
 	writeByte_PCA9685(hwAddress, MODE1, mode1Status);
 	usleep(5000); // Wait for oscillator
@@ -41,7 +36,6 @@ void set_PWM_frequency_PCA9685(uint8_t hwAddress, uint16_t pwmFrequency){
 	prescaleFreqFloat = floor(prescaleFreqFloat+ 0.5) ;
 	int prescaleFreqInt = (int)prescaleFreqFloat;
 	uint8_t mode1StatusPrev = readByte_PCA9685(hwAddress, MODE1);
-printf("mode1freq : %d\n", mode1StatusPrev);
 	uint8_t mode1StatusNext = (mode1StatusPrev & 0x7F) | 0x10; //Put to sleep
 	writeByte_PCA9685(hwAddress, MODE1, mode1StatusNext);
 	writeByte_PCA9685(hwAddress, PRESCALE, (uint8_t)prescaleFreqInt);
@@ -60,10 +54,6 @@ void set_PWM_PCA9685(uint8_t hwAddress, uint8_t pwmChannel, uint16_t onTime, uin
   
 
 void writeByte_PCA9685(uint8_t hwAddress, uint8_t writeAddress, uint8_t writeData){
-
-printf("address: %x data %d\n", writeAddress, writeData);
-
-
 	// Write 8 bits data to peripheral hardware using Broadcom Serial Controller protocol (BSC0)
 	// Select peripheral hardware 
 	BSC0_A = hwAddress;
