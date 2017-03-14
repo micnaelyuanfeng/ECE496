@@ -12,6 +12,8 @@ uint8_t PWM_channel_to_PWM_pin_converter_DC_motor(uint8_t pwmChannel);
 uint8_t PWM_channel_to_IN1_pin_converter_DC_motor(uint8_t pwmChannel);
 uint8_t PWM_channel_to_IN2_pin_converter_DC_motor(uint8_t pwmChannel);
 
+#endif
+
 /*
 	Usage:
 		1. Initalize the borad according to its address	

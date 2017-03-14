@@ -1,5 +1,8 @@
+#include "Standard_Library.h"
+#include "System_Library.h"
 #include "PCA9685.h"
 #include "Adafruit_MotorHAT.h"
+
 
 void set_speed_DC_motor(uint8_t hwAddress, uint8_t pwmChannel, int motorSpeed){
 	if(motorSpeed < 0){
@@ -83,7 +86,7 @@ uint8_t PWM_channel_to_IN1_pin_converter_DC_motor(uint8_t pwmChannel){
 		case 3 	: 	in1Pin = 5;
 					break;
 		default	:	printf("PWM_channel_to_IN1_pin_converter_DC_motor failed to parse pwm channel %x.\n Exit...\n", pwmChannel);
-					exit 1;
+					exit (1);
 					break;
 	}
 	return in1Pin;
@@ -101,7 +104,7 @@ uint8_t PWM_channel_to_IN2_pin_converter_DC_motor(uint8_t pwmChannel){
 		case 3 	: 	in2Pin = 6;
 					break;
 		default	:	printf("PWM_channel_to_IN2_pin_converter_DC_motor failed to parse pwm channel %x.\n Exit...\n", pwmChannel);
-					exit 1;
+					exit (1);
 					break;
 	}
 	return in2Pin;

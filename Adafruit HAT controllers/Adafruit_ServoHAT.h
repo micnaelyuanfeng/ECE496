@@ -4,9 +4,11 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-void init_angle_to_duty_cycle_lookup_table(double *ptLookupTable);
+void init_angle_to_duty_cycle_lookup_table();
 uint16_t angle_to_duty_cycle_percentage_converter(double * ptLookupTable, uint8_t angleDegree);
 void set_servo(uint8_t hwAddress, uint8_t pwmChannel, uint8_t angleDegree);
+
+#endif
 
 /*
 	Usage:
