@@ -16,9 +16,9 @@
  #define ASCII_A 65
  //Thread
  /*************************************************/
- pthread_t thread_base[thread_max];
- int thread_fd[thread_max];
- int thread_id[thread_max];
+ pthread_t thread_base[2];
+ int thread_fd[2];
+ int thread_id[2];
 
 /*************conditional variable********************/
 pthread_mutex_t m = PTHREAD_MUTEX_INITIALIZER;
@@ -141,7 +141,7 @@ pthread_mutex_t raw_data_lock = PTHREAD_MUTEX_INITIALIZER;
 				printf("counter is %d\n", counter);
 				printf("-----------------------\n");
 			}
-			else if(raw_head == NULL){
+			else if(raw_head != NULL){
 				raw_curr = raw_head;	
 				while(raw_curr->next != NULL)
 					raw_curr = raw_curr->next;
