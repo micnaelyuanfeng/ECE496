@@ -1031,6 +1031,26 @@ namespace LeapPanel
         private void faceButton_Click(object sender,EventArgs e)
         {
             faceRecProcess = Process.Start("MultiFaceRec.exe");
+            faceRecProcess.EnableRaisingEvents = true;
+            faceRecProcess.Exited += onFaceRecProcessExit;
+            this.Enabled = false;
+        }
+        private delegate void exitProcessCallBack();
+        private void enableForm()
+        {
+            this.Enabled = true;
+            
+        }
+        private void onFaceRecProcessExit(object sender,EventArgs e)
+        {
+            if(this.InvokeRequired)
+            {
+                var callBack = new exitProcessCallBack(enableForm);
+                this.Invoke(callBack);
+            }
+            else
+                this.Enabled = true;
+           
         }
         
     }
