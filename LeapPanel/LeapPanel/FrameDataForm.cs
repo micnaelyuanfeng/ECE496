@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.VisualBasic;
+using System.Diagnostics;
 using Leap;
 
 namespace LeapPanel
@@ -18,6 +19,8 @@ namespace LeapPanel
     {
         private Controller controller;
         private LeapEventListener listener;
+
+        private Process faceRecProcess;
 
         private int gesture_motion;
 
@@ -1025,6 +1028,11 @@ namespace LeapPanel
         {
 
         }
+        private void faceButton_Click(object sender,EventArgs e)
+        {
+            faceRecProcess = Process.Start("MultiFaceRec.exe");
+        }
+        
     }
 
     public interface ILeapEventDelegate

@@ -28,3 +28,12 @@ C:\Users\micha\Desktop\LeapPanel\LeapPanel\obj\Debug\LeapPanel.csproj.GenerateRe
 E:\LeapPanel\LeapPanel\bin\Debug\LeapPanel.exe.config
 E:\LeapPanel\LeapPanel\obj\Debug\LeapPanel.exe
 E:\LeapPanel\LeapPanel\obj\Debug\LeapPanel.pdb
+D:\coding\ECE496\LeapPanel\LeapPanel\bin\Debug\LeapPanel.exe.config
+D:\coding\ECE496\LeapPanel\LeapPanel\obj\Debug\LeapPanel.exe
+D:\coding\ECE496\LeapPanel\LeapPanel\obj\Debug\LeapPanel.pdb
+D:\coding\ECE496\LeapPanel\LeapPanel\bin\Debug\LeapPanel.exe
+D:\coding\ECE496\LeapPanel\LeapPanel\bin\Debug\LeapPanel.pdb
+D:\coding\ECE496\LeapPanel\LeapPanel\obj\Debug\LeapPanel.csprojResolveAssemblyReference.cache
+D:\coding\ECE496\LeapPanel\LeapPanel\obj\Debug\LeapPanel.Form1.resources
+D:\coding\ECE496\LeapPanel\LeapPanel\obj\Debug\LeapPanel.Properties.Resources.resources
+D:\coding\ECE496\LeapPanel\LeapPanel\obj\Debug\LeapPanel.csproj.GenerateResource.Cache
