@@ -1035,9 +1035,11 @@ namespace LeapPanel
             faceRecProcess.Exited += onFaceRecProcessExit;
             this.Enabled = false;
         }
-        private delegate void exitProcessCallBack();
+
+        private delegate void exitProcessCallBack(); //delegate of void func(void) type
         private void enableForm()
         {
+            //enables the form
             this.Enabled = true;
             
         }
