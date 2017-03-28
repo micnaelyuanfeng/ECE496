@@ -79,6 +79,15 @@ namespace LeapPanel
         private int last_position_y = 0;
         private int last_position_z = 0;
 
+        #region Key press Bools
+        private bool upKeyPressed=false;
+        private bool downKeyPressed = false;
+        private bool leftKeyPressed = false;
+        private bool rightKeyPressed = false;
+        #endregion
+
+
+
         public Form1()
         {
             InitializeComponent();
@@ -554,6 +563,36 @@ namespace LeapPanel
             this.Text = G_str_text;  
              
         }
+        private void onKeyDown(object sender, KeyEventArgs ke)
+        {
+            var handler = new keyEventDelegate(setArrowKeyTextBox);
+            if(ke.KeyCode==Keys.Up)
+            {
+                upKeyPressed = true;
+                this.Invoke(handler, this.up_key);
+            }
+            else if(ke.KeyCode==Keys.Down)
+            {
+                downKeyPressed = true;
+                this.Invoke(handler, this.down_key);
+            }
+            else if(ke.KeyCode==Keys.Left)
+            {
+                leftKeyPressed = true;
+                this.Invoke(handler, this.left_key);
+            }
+            else if(ke.KeyCode==Keys.Right)
+            {
+                leftKeyPressed = true;
+                this.Invoke(handler, this.right_key);
+            }
+        }
+        private delegate void keyEventDelegate(TextBox target);
+
+        private void setArrowKeyTextBox(TextBox target)
+        {
+            target.Text = "Pressed";
+        }
     }
 
     public interface ILeapEventDelegate
@@ -594,4 +633,6 @@ namespace LeapPanel
             this.eventDelegate.LeapEventNotification("onDisconnect");
         }
     }
+
+    
 }
