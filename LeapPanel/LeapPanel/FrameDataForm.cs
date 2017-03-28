@@ -113,6 +113,8 @@ namespace LeapPanel
             this.controller = new Controller();
             this.listener = new LeapEventListener(this);
             controller.AddListener(listener);
+            this.KeyPreview = true;
+            this.KeyDown += onKeyDown;
         }
 
         delegate void LeapEventDelegate(string EventName);
@@ -569,22 +571,34 @@ namespace LeapPanel
             if(ke.KeyCode==Keys.Up)
             {
                 upKeyPressed = true;
-                this.Invoke(handler, this.up_key);
+                if (InvokeRequired)
+                    this.Invoke(handler, this.up_key);
+                else
+                    setArrowKeyTextBox(this.up_key);
             }
             else if(ke.KeyCode==Keys.Down)
             {
                 downKeyPressed = true;
-                this.Invoke(handler, this.down_key);
+                if (InvokeRequired)
+                    this.Invoke(handler, this.down_key);
+                else
+                    setArrowKeyTextBox(this.down_key);
             }
             else if(ke.KeyCode==Keys.Left)
             {
                 leftKeyPressed = true;
-                this.Invoke(handler, this.left_key);
+                if (InvokeRequired)
+                    this.Invoke(handler, this.left_key);
+                else
+                    setArrowKeyTextBox(this.left_key);
             }
             else if(ke.KeyCode==Keys.Right)
             {
                 leftKeyPressed = true;
-                this.Invoke(handler, this.right_key);
+                if (InvokeRequired)
+                    this.Invoke(handler, this.right_key);
+                else
+                    setArrowKeyTextBox(this.right_key);
             }
         }
         private delegate void keyEventDelegate(TextBox target);
