@@ -27,9 +27,9 @@ namespace LeapPanel
         private Byte[] data;
 
         //three fingers: index, middle, pinkle
-        private Finger[] finger_object = new Finger[3];
-        private Bone[,] bone_object = new Bone[3, 4];
-        private bool[] finger_exist = new bool[3];
+        //private Finger[] finger_object = new Finger[3];
+        //private Bone[,] bone_object = new Bone[3, 4];
+        //private bool[] finger_exist = new bool[3];
 
         private Finger thumb;
         private bool thumb_exist;
@@ -49,6 +49,18 @@ namespace LeapPanel
         private Bone middle_prox;
         private Bone middle_inter;
         private bool middle_exist;
+
+        private int forward_move = 0;
+        private int backward_move = 0;
+        private int left_move = 0;
+        private int right_move = 0;
+
+        #region Key press Bools
+        private bool upKeyPressed = false;
+        private bool downKeyPressed = false;
+        private bool leftKeyPressed = false;
+        private bool rightKeyPressed = false;
+        #endregion
 
         int hand_position_x;
         int hand_position_y; 
@@ -79,15 +91,6 @@ namespace LeapPanel
         private int last_position_y = 0;
         private int last_position_z = 0;
 
-        #region Key press Bools
-        private bool upKeyPressed=false;
-        private bool downKeyPressed = false;
-        private bool leftKeyPressed = false;
-        private bool rightKeyPressed = false;
-        #endregion
-
-
-
         public Form1()
         {
             InitializeComponent();
@@ -99,7 +102,7 @@ namespace LeapPanel
             {
                 tcpclnt = new TcpClient();
                 //Console.WriteLine("Connecting to the server[{0}]", "192.168.1.244");
-                tcpclnt.Connect("192.168.1.244", 2050);
+                tcpclnt.Connect("192.168.1.83", 2050);
                 //MessageBox.Show("Connected");
                 //textBox5.Text = "Connected";
                 //richTextBox.AppendText("Connected" + Environment.NewLine);
@@ -112,9 +115,9 @@ namespace LeapPanel
 
             this.controller = new Controller();
             this.listener = new LeapEventListener(this);
-            controller.AddListener(listener);
             this.KeyPreview = true;
             this.KeyDown += onKeyDown;
+            controller.AddListener(listener);
         }
 
         delegate void LeapEventDelegate(string EventName);
@@ -460,9 +463,17 @@ namespace LeapPanel
                 {
                     //finger 0(1)
                     if(thumb_exist == true)
-                        command = "0" + "-" + "0" + "-" + ((int)thumb_pm_degree).ToString()
-                                   + "-" + "1" + "-" + ((int)thumb_ip_degree).ToString() + "-" + "2"
-                                   + "-" + ((int)thumb_ip_degree).ToString();
+                        command = "0" + "-" + ((int)thumb_pm_degree).ToString()
+                                   + "-" + ((int)thumb_ip_degree).ToString() 
+                                   + "-" + ((int)thumb_ip_degree).ToString()
+                                   + "-" + ((int)forward_move).ToString()
+                                   + "-" + ((int)backward_move).ToString()
+                                   + "-" + ((int)right_move).ToString()
+                                   + "-" + ((int)left_move).ToString()
+                                   + "-"  + ((int)hand_position_x).ToString()
+                                   + "-" + ((int)hand_position_y).ToString()
+                                   + "-" + ((int)hand_position_z).ToString()
+                                   + "-" + ((int)roll_degrees).ToString();
                     //add move command from keyboard
                     //add finger 1 and finger 2 data
 
@@ -481,10 +492,17 @@ namespace LeapPanel
 
                     //finger 1(2)
                     if(middle_exist == true)
-                        command = "1" + "-" + "0" + "-" + ((int)middle_pm_degree).ToString()
-                                   + "-" + "1" + "-" + ((int)middle_ip_degree).ToString() + "-" + "2"
-                                   + "-" + ((int)middle_ip_degree).ToString();
-
+                        command = "1" + "-" + ((int)thumb_pm_degree).ToString()
+                                   + "-" + ((int)thumb_ip_degree).ToString()
+                                   + "-" + ((int)thumb_ip_degree).ToString()
+                                   + "-" + ((int)forward_move).ToString()
+                                   + "-" + ((int)backward_move).ToString()
+                                   + "-" + ((int)right_move).ToString()
+                                   + "-" + ((int)left_move).ToString()
+                                   + "-" + ((int)hand_position_x).ToString()
+                                   + "-" + ((int)hand_position_y).ToString()
+                                   + "-" + ((int)hand_position_z).ToString()
+                                   + "-" + ((int)roll_degrees).ToString();
                     if (tcpclnt.Connected)
                     {
                         NetworkStream stream = tcpclnt.GetStream();
@@ -498,10 +516,19 @@ namespace LeapPanel
                     System.Threading.Thread.Sleep(20);
 
                     //finger 2(3)
+                       
                     if(index_exist == true)
-                        command = "2" + "-" + "0" + "-" + ((int)index_pm_degree).ToString()
-                                   + "-" + "1" + "-" + ((int)index_ip_degree).ToString() + "-" + "2"
-                                   + "-" + ((int)index_ip_degree).ToString();
+                        command = "2" + "-" + ((int)thumb_pm_degree).ToString()
+                                  + "-" + ((int)thumb_ip_degree).ToString()
+                                  + "-" + ((int)thumb_ip_degree).ToString()
+                                  + "-" + ((int)forward_move).ToString()
+                                  + "-" + ((int)backward_move).ToString()
+                                  + "-" + ((int)right_move).ToString()
+                                  + "-" + ((int)left_move).ToString()
+                                  + "-" + ((int)hand_position_x).ToString()
+                                  + "-" + ((int)hand_position_y).ToString()
+                                  + "-" + ((int)hand_position_z).ToString()
+                                  + "-" + ((int)roll_degrees).ToString();
 
                   
                     
@@ -528,6 +555,21 @@ namespace LeapPanel
             thumb_exist = false;
             index_exist = false;
             middle_exist = false;
+
+            up_key.Text = " ";
+            down_key.Text = " ";
+            left_key.Text = " ";
+            right_key.Text = " ";
+
+            upKeyPressed = false;
+            downKeyPressed = false;
+            leftKeyPressed = false;
+            rightKeyPressed = false;
+
+            forward_move = 0;
+            backward_move = 0;
+            left_move = 0;
+            right_move = 0;
          }
 
         public float ToDegrees(float Radian)
@@ -565,12 +607,14 @@ namespace LeapPanel
             this.Text = G_str_text;  
              
         }
+
         private void onKeyDown(object sender, KeyEventArgs ke)
         {
             var handler = new keyEventDelegate(setArrowKeyTextBox);
             if(ke.KeyCode==Keys.Up)
             {
                 upKeyPressed = true;
+                forward_move = 5;
                 if (InvokeRequired)
                     this.Invoke(handler, this.up_key);
                 else
@@ -579,6 +623,7 @@ namespace LeapPanel
             else if(ke.KeyCode==Keys.Down)
             {
                 downKeyPressed = true;
+                backward_move = 5;
                 if (InvokeRequired)
                     this.Invoke(handler, this.down_key);
                 else
@@ -587,6 +632,7 @@ namespace LeapPanel
             else if(ke.KeyCode==Keys.Left)
             {
                 leftKeyPressed = true;
+                left_move = 5;
                 if (InvokeRequired)
                     this.Invoke(handler, this.left_key);
                 else
@@ -594,7 +640,8 @@ namespace LeapPanel
             }
             else if(ke.KeyCode==Keys.Right)
             {
-                leftKeyPressed = true;
+                rightKeyPressed = true;
+                right_move = 5;
                 if (InvokeRequired)
                     this.Invoke(handler, this.right_key);
                 else
@@ -607,6 +654,7 @@ namespace LeapPanel
         {
             target.Text = "Pressed";
         }
+ 
     }
 
     public interface ILeapEventDelegate
@@ -647,6 +695,4 @@ namespace LeapPanel
             this.eventDelegate.LeapEventNotification("onDisconnect");
         }
     }
-
-    
 }
