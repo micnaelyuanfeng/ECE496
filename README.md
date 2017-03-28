@@ -8,8 +8,6 @@ Project Features:
 
 --Remote Control Robot Arm wifi
 
---Self_driver Ability
-
 --Facial Recognition
 
 --Customozied Operating System
