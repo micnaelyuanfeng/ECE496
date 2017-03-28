@@ -9,8 +9,8 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Windows.Input;
 using Microsoft.VisualBasic;
-using System.Diagnostics;
 using Leap;
 
 namespace LeapPanel
@@ -19,10 +19,6 @@ namespace LeapPanel
     {
         private Controller controller;
         private LeapEventListener listener;
-
-        private Process faceRecProcess;
-
-        private int gesture_motion;
 
         //wifi vars
         private TcpClient tcpclnt;
@@ -35,75 +31,53 @@ namespace LeapPanel
         private Bone[,] bone_object = new Bone[3, 4];
         private bool[] finger_exist = new bool[3];
 
+        private Finger thumb;
+        private bool thumb_exist;
+        private Bone thumb_meta;
+        private Bone thumb_prox;
+        private Bone thumb_inter;
+    
+        private Finger index;
+  
+        private Bone index_meta;
+        private Bone index_prox;
+        private Bone index_inter;
+        private bool index_exist;
+        private Finger middle;
+      
+        private Bone middle_meta;
+        private Bone middle_prox;
+        private Bone middle_inter;
+        private bool middle_exist;
+
+        int hand_position_x;
+        int hand_position_y; 
+        int hand_position_z;
+        float roll;
+        int roll_degrees;
+        double thumb_PM_dot;
+        double thumb_IP_dot;
+        double thumb_pm_degree;
+        double thumb_ip_degree;
+
+        double index_PM_dot;
+        double index_IP_dot;
+        double index_pm_degree;
+        double index_ip_degree;
+
+        double middle_PM_dot;
+        double middle_IP_dot;
+        double middle_pm_degree;
+        double middle_ip_degree;
+
         private bool start_track = true;
         private float time_track_1;
         //private float time_track_2;
         private double track_resolution = 250000;
-        private int sensitivity = 3;
-        //private double track_resolution = 250000;
-        private bool if_send = true;
 
-        private bool initial_f1 = true;
-        private bool initial_f2 = true;
-        private bool initial_f3 = true;
-
-        //one finger move var block
-        private Vector bone0_x;
-        private Vector bone1_x;
-        private Vector bone2_x;
-        private Vector bone11_x_reference; //normal to x
-        private Vector bone21_x_reference;
-        private Vector bone31_x_reference;
-       // private bool update_x = true; // only take once and set false, expcet lost tracking and back
-
-        private double last_degree_x_f011 = 0;
-        private double last_degree_y_f01 = 0;
-        private double last_degree_z_f01 = 0;
-        private double last_degree_x_f012 = 0;
-        private double last_degree_x_f013 = 0;
-        private double last_degree_y_f02 = 0;
-        private double last_degree_z_f02 = 0;
-
-        private double last_degree_x_f111 = 0;
-        private double last_degree_x_f112 = 0;
-        private double last_degree_x_f113 = 0;
-
-        private double last_degree_y_f11 = 0;
-        private double last_degree_z_f11 = 0;   
-        private double last_degree_y_f12 = 0;
-        private double last_degree_z_f12 = 0;
-
-        private double last_degree_x_f211 = 0;
-        private double last_degree_x_f212 = 0;
-        private double last_degree_x_f213 = 0;
-
-        private double last_degree_y_f21 = 0;
-        private double last_degree_z_f21 = 0;
-        private double last_degree_y_f22 = 0;
-        private double last_degree_z_f22 = 0;
-
-        private int command_degree_f01 = 0;
-        private int command_degree_f02 = 0;
-        private int command_degree_f03 = 0;
-        private int last_degree_f01 = 0;
-        private int last_degree_f02 = 0;
-        private int last_degree_f03 = 0;
-
-        private int command_degree_f11 = 0;
-        private int command_degree_f12 = 0;
-        private int command_degree_f13 = 0;
-        private int last_degree_f11 = 0;
-        private int last_degree_f12 = 0;
-        private int last_degree_f13 = 0;
-
-        private int command_degree_f21 = 0;
-        private int command_degree_f22 = 0;
-        private int command_degree_f23 = 0;
-        private int last_degree_f21 = 0;
-        private int last_degree_f22 = 0;
-        private int last_degree_f23 = 0;
-
-        private double[] velocity_lookup = new double[20];
+        private int last_position_x = 0;
+        private int last_position_y = 0;
+        private int last_position_z = 0;
 
         public Form1()
         {
@@ -111,8 +85,6 @@ namespace LeapPanel
 
             ServerIPTextbox.Text = "192.168.1.244";
             PortNumber.Text = "2050";
-
-            textBox13.Text = track_resolution.ToString();
             //wifi connection
             try
             {
@@ -142,20 +114,17 @@ namespace LeapPanel
                 switch (EventName)
                 {
                     case "onInit":
-                        //MessageBox.Show("Leap Motion Conneted");
                         break;
                     case "onConnect":
                         connectHandler();
                         break;
                     case "onFrame":
-                        //detectGesture(this.controller.Frame());//get latest frame     
-                        //display_flag = true;
-                       /* while (greeting(this.controller.Frame()) != 1)
-                        {
-                            richTextBox.Text= "Need Swipe to Activate";
-                        }*/
+                        //greeting(this.controller.Frame());
                         fingerMotion(this.controller.Frame());
-                        degree_conversion();
+                        handMotion(this.controller.Frame());
+                        fingerMotion_2(this.controller.Frame());
+                        degree_calculation();
+                        //degree_conversion();
                         break;
                 }
             }
@@ -165,15 +134,176 @@ namespace LeapPanel
             }
         }
 
-        public int greeting(Frame frame)
+        public void degree_calculation()
         {
-            detectGesture(frame);
-            richTextBox.AppendText("Hello, Please use Swipe motion to activate" + Environment.NewLine);
+            
+            if (thumb_meta != null && thumb_inter != null && thumb_prox != null)
+            {
+                Vector thumb_meta_norm = thumb_meta.Direction.Normalized;
+                Vector thumb_prox_norm = thumb_prox.Direction.Normalized;
+                Vector thumb_inter_norm = thumb_inter.Direction.Normalized;
+                thumb_PM_dot = thumb_prox_norm.Dot(thumb_meta_norm);
+                thumb_IP_dot = thumb_inter_norm.Dot(thumb_prox_norm);
 
-            if(gesture_motion == 1)
-                return 0;
-            else
-                return 1;
+                thumb_pm_degree = Math.Acos(thumb_PM_dot) * 180 /Math.PI;
+                thumb_ip_degree = Math.Acos(thumb_IP_dot) * 180 / Math.PI;
+                thumb_PM.Text = thumb_pm_degree.ToString();
+                thumb_IP.Text = thumb_ip_degree.ToString();
+
+                //Math.acos(dotProduct);
+            }
+
+            if (index_meta != null && index_inter != null & index_prox != null)
+            {
+                Vector index_meta_norm = index_meta.Direction.Normalized;
+                Vector index_prox_norm = index_prox.Direction.Normalized;
+                Vector index_inter_norm = index_inter.Direction.Normalized;
+                index_PM_dot = index_prox_norm.Dot(index_meta_norm);
+                index_IP_dot = index_inter_norm.Dot(index_prox_norm);
+
+                index_pm_degree = Math.Acos(index_PM_dot) * 180 / Math.PI;
+                index_ip_degree = Math.Acos(index_IP_dot) * 180 / Math.PI;
+                index_PM.Text = index_pm_degree.ToString();
+                index_IP.Text = index_ip_degree.ToString();
+            }
+
+            if (index_meta != null && index_inter != null & index_prox != null)
+            {
+                Vector middle_meta_norm = index_meta.Direction.Normalized;
+                Vector middle_prox_norm = index_prox.Direction.Normalized;
+                Vector middle_inter_norm = index_inter.Direction.Normalized;
+                middle_PM_dot = middle_prox_norm.Dot(middle_meta_norm);
+                middle_IP_dot = middle_inter_norm.Dot(middle_prox_norm);
+
+                middle_pm_degree = Math.Acos(middle_PM_dot) * 180 / Math.PI;
+                middle_ip_degree = Math.Acos(middle_IP_dot) * 180 / Math.PI;
+                middle_PM.Text = middle_pm_degree.ToString();
+                middle_IP.Text = middle_ip_degree.ToString();
+            }
+            // 
+        }
+
+        public void fingerMotion_2(Leap.Frame frame)
+        {
+            foreach (Finger finger in frame.Fingers)
+            {
+                //get finger type
+                switch (finger.Type)
+                {
+                    case Finger.FingerType.TYPE_THUMB:
+                        thumb = finger;
+                        thumb_exist = true;
+                        thumb_text.Text = "detected";
+                        bone_detect(finger);
+                        break;
+
+                    case Finger.FingerType.TYPE_INDEX:
+                        index = finger;
+                        index_exist = true;
+                        index_text.Text = "detected";
+                        bone_detect(finger);
+                        break;
+
+                    case Finger.FingerType.TYPE_MIDDLE:
+                        middle = finger;
+                        middle_exist = true;
+                        middle_text.Text = "detected";
+                        bone_detect(finger);
+                        break;
+                }
+            }
+        }
+
+        public void bone_detect(Finger finger)
+        {
+            foreach (Bone.BoneType boneType in (Bone.BoneType[])Enum.GetValues(typeof(Bone.BoneType)))
+            {
+                Bone bone = finger.Bone(boneType);
+
+                switch (bone.Type)
+                {
+                    case Bone.BoneType.TYPE_METACARPAL:
+                        bone_assignment_2(bone, finger);
+                        break;
+
+                    case Bone.BoneType.TYPE_PROXIMAL:
+                        bone_assignment_2(bone, finger);
+                        break;
+
+                    case Bone.BoneType.TYPE_INTERMEDIATE:
+                        bone_assignment_2(bone, finger);
+                        break;
+
+                    case Bone.BoneType.TYPE_DISTAL:
+                        bone_assignment_2(bone, finger);
+                        break;
+                }
+            }
+        }
+
+        public void bone_assignment_2(Bone bone, Finger finger)
+        {
+
+            if (bone.Type == Bone.BoneType.TYPE_METACARPAL)
+            {
+                switch (finger.Type)
+                {
+                    case Finger.FingerType.TYPE_INDEX:
+                        index_meta = bone;
+                        indexmeta.Text = "detected";
+                        break;
+
+                    case Finger.FingerType.TYPE_MIDDLE:
+                        middle_meta = bone;
+                        middlemeta.Text = "detected";
+                        break;
+
+                    case Finger.FingerType.TYPE_THUMB:
+                        thumb_meta = bone;
+                        thumbmeta.Text = "detected";
+                        break;
+                }
+            }
+            else if (bone.Type == Bone.BoneType.TYPE_PROXIMAL)
+            {
+                switch (finger.Type)
+                {
+                    case Finger.FingerType.TYPE_INDEX:
+                        index_prox = bone;
+                        indexprox.Text = "detected";
+                        break;
+
+                    case Finger.FingerType.TYPE_MIDDLE:
+                       middle_prox = bone;
+                       middleprox.Text = "detected";
+                       break;
+
+                    case Finger.FingerType.TYPE_THUMB:
+                        thumb_prox = bone;
+                        thumbprox.Text = "detected";
+                        break;
+                }
+            }
+            else if (bone.Type == Bone.BoneType.TYPE_INTERMEDIATE)
+            {
+                switch (finger.Type)
+                {
+                    case Finger.FingerType.TYPE_INDEX:
+                        index_inter = bone;
+                        indexinter.Text = "detected";
+                        break;
+
+                    case Finger.FingerType.TYPE_MIDDLE:
+                        middle_inter = bone;
+                        middleinter.Text = "detected";
+                        break;
+
+                    case Finger.FingerType.TYPE_THUMB:
+                        thumb_inter = bone;
+                        thumbinter.Text = "detected";
+                        break;
+                }
+            }
         }
 
         public void connectHandler()
@@ -196,37 +326,18 @@ namespace LeapPanel
                 switch(gesture.Type)
                 {
                     case Gesture.GestureType.TYPE_INVALID:
-                        //fingerMotion(this.controller.Frame());
-                        //degree_conversion();
-                        gesture_motion = 10;
                         break;
 
                     case Gesture.GestureType.TYPE_CIRCLE:
-                        //fingerMotion(this.controller.Frame());
-                        //degree_conversion();
-                        gesture_motion = 10;
-                        richTextBox.AppendText("CircleGesture detected" + Environment.NewLine);
                         break;
 
                     case Gesture.GestureType.TYPE_SWIPE:
-                        richTextBox.AppendText("SwipeGesture detected" + Environment.NewLine);
-                        //fingerMotion(this.controller.Frame());
-                        //degree_conversion();
-                        gesture_motion = 1;
                         break;
 
                     case Gesture.GestureType.TYPE_KEY_TAP:
-                        //fingerMotion(this.controller.Frame());
-                        //degree_conversion();
-                        richTextBox.AppendText("Key Tap detected" + Environment.NewLine);
-                        gesture_motion = 10;
                         break;
 
                     case Gesture.GestureType.TYPE_SCREEN_TAP:
-                        //fingerMotion(this.controller.Frame());
-                        //degree_conversion();
-                        richTextBox.AppendText("Screen Tap detected" + Environment.NewLine);
-                        gesture_motion = 10;
                         break;
                 }
             }
@@ -236,787 +347,183 @@ namespace LeapPanel
 
         public void handMotion(Leap.Frame frame)
         {
+            Hand hand;
+            Hand right_hand;
+
             //get hand roll degree
+            if (frame.Hands.Count > 0)
+            {
+                hand = frame.Hands[0];
+                right_hand = frame.Hands[1];
+
+                if (hand.IsValid)
+                {
+                    Vector position = hand.PalmPosition;
+                    Vector velocity = hand.PalmVelocity;
+                    Vector direction = hand.Direction;
+                    Vector normal = hand.PalmNormal;
+
+                    roll = hand.PalmNormal.Roll;
+                    roll_degrees = (int)ToDegrees(roll);
+
+                    richTextBox3.Text = roll_degrees.ToString();
+
+                    hand_position_x = (int)position.x;
+                    hand_position_y = (int)position.y;
+                    hand_position_z = (int)position.z;
+
+
+                    if(last_position_x != (int)hand_position_x)
+                    {   if(hand_position_x < 0)
+                        {
+                            xdirection.Text = "Left ";
+                            x_displacement.Text = hand_position_x.ToString(); 
+                        }
+                        else
+                        {
+                            xdirection.Text = "Right";
+                            x_displacement.Text = hand_position_x.ToString(); 
+                        }
+                        
+                        last_position_x = (int)hand_position_x;
+                    }
+
+                    if (last_position_y != (int)hand_position_y)
+                    {
+                        hand_position_y = hand_position_y - 200;
+                        if (hand_position_y < 0)
+                        {
+                            ydirection.Text = "Down";
+                            y_displacement.Text = hand_position_y.ToString();
+                        }
+                        else
+                        {
+                            ydirection.Text = "Up";
+                            y_displacement.Text = hand_position_y.ToString();
+                        }
+
+                        last_position_y = (int)hand_position_y;
+                    }
+
+                    if (last_position_z != (int)hand_position_z)
+                    {
+                        if (hand_position_z < 0)
+                        {
+                            zdirection.Text = "Forward";
+                            z_displacement.Text = hand_position_z.ToString();
+                        }
+                        else
+                        {
+                            zdirection.Text = "Backward";
+                            z_displacement.Text = hand_position_z.ToString();
+                        }
+
+                        last_position_z = (int)hand_position_z;
+                    }
+                }
+
+                
+            }
         }
 
         public void fingerMotion(Leap.Frame frame)
         {
-            //create fingers and their bones
-            //bone[0, 0...2]: finger 0 bone base to tip
-            //finger 0 is index, finger 1 is middle, finger 2 is pinkle
             richTextBox.Text = frame.Timestamp.ToString();
+
+            //char name = Console.ReadKey();
+
+            //up_key.Text = name.ToString();
 
             if(start_track)
             {
                 start_track = false;
                 time_track_1 = frame.Timestamp;
-                //richTextBox2.Text = time_track_1.ToString() + "haha" + start_track.ToString();
             }
             
             if((frame.Timestamp - time_track_1) > track_resolution)
             {
-                //ServerIPTextbox.Text = if_send.ToString();
-                //send info
-               if_send = send_validation();
-
-                //ServerIPTextbox.Text = if_send.ToString();
-
+ 
                 start_track = true;
 
-                if (if_send)
+                if (true)
                 {
-                    if_send = false;
-                    //update_x = true;
-                   // finger_x_plane();
-                   // ServerIPTextbox.Text = if_send.ToString();
-
-                    degree_validation();
-
-
                     //finger 0(1)
-                    if(finger_exist[0] == true)
-                        command = "0" + "-" + "0" + "-" + ((int)command_degree_f01).ToString()
-                                   + "-" + "1" + "-" + ((int)command_degree_f02).ToString() + "-" + "2"
-                                   + "-" + ((int)command_degree_f03).ToString();
-                    else
-                        command = "0" + "-" + "0" + "-" + ((int)last_degree_f01).ToString()
-                                   + "-" + "1" + "-" + ((int)last_degree_f02).ToString() + "-" + "2"
-                                   + "-" + ((int)last_degree_f03).ToString();
+                    if(thumb_exist == true)
+                        command = "0" + "-" + "0" + "-" + ((int)thumb_pm_degree).ToString()
+                                   + "-" + "1" + "-" + ((int)thumb_ip_degree).ToString() + "-" + "2"
+                                   + "-" + ((int)thumb_ip_degree).ToString();
+                    //add move command from keyboard
                     //add finger 1 and finger 2 data
 
-                    textBox4.Text = command;
 
-                    System.Threading.Thread.Sleep(70);
+                    System.Threading.Thread.Sleep(20);
 
                     if (tcpclnt.Connected)
                     {
                         NetworkStream stream = tcpclnt.GetStream();
-                        data = System.Text.Encoding.ASCII.GetBytes(textBox4.Text);
-                        stream.Write(data, 0, data.Length);
+                        if (command != null)
+                        {
+                            data = System.Text.Encoding.ASCII.GetBytes(command);
+                            stream.Write(data, 0, data.Length);
+                        }
                     }
 
                     //finger 1(2)
-                    if(finger_exist[1] == true)
-                        command = "1" + "-" + "0" + "-" + ((int)command_degree_f11).ToString()
-                                   + "-" + "1" + "-" + ((int)command_degree_f12).ToString() + "-" + "2"
-                                   + "-" + ((int)command_degree_f13).ToString();
-                    else
-                        command = "1" + "-" + "0" + "-" + ((int)last_degree_f11).ToString()
-                              + "-" + "1" + "-" + ((int)last_degree_f12).ToString() + "-" + "2"
-                              + "-" + ((int)last_degree_f13).ToString();
-
-                    textBox11.Text = command;
+                    if(middle_exist == true)
+                        command = "1" + "-" + "0" + "-" + ((int)middle_pm_degree).ToString()
+                                   + "-" + "1" + "-" + ((int)middle_ip_degree).ToString() + "-" + "2"
+                                   + "-" + ((int)middle_ip_degree).ToString();
 
                     if (tcpclnt.Connected)
                     {
                         NetworkStream stream = tcpclnt.GetStream();
-                        data = System.Text.Encoding.ASCII.GetBytes(textBox11.Text);
-                        stream.Write(data, 0, data.Length);
+                        if (command != null)
+                        {
+                            data = System.Text.Encoding.ASCII.GetBytes(command);
+                            stream.Write(data, 0, data.Length);
+                        }
                     }
 
-                    System.Threading.Thread.Sleep(70);
+                    System.Threading.Thread.Sleep(20);
 
                     //finger 2(3)
-                    if(finger_exist[2] == true)
-                        command = "2" + "-" + "0" + "-" + ((int)command_degree_f21).ToString()
-                                   + "-" + "1" + "-" + ((int)command_degree_f22).ToString() + "-" + "2"
-                                   + "-" + ((int)command_degree_f23).ToString();
-                    else
-                        command = "2" + "-" + "0" + "-" + ((int)last_degree_f21).ToString()
-                                   + "-" + "1" + "-" + ((int)last_degree_f22).ToString() + "-" + "2"
-                                   + "-" + ((int)last_degree_f23).ToString();
+                    if(index_exist == true)
+                        command = "2" + "-" + "0" + "-" + ((int)index_pm_degree).ToString()
+                                   + "-" + "1" + "-" + ((int)index_ip_degree).ToString() + "-" + "2"
+                                   + "-" + ((int)index_ip_degree).ToString();
 
-                    textBox12.Text = command;
-
+                  
+                    
                     if (tcpclnt.Connected)
                     {
                         NetworkStream stream = tcpclnt.GetStream();
-                        data = System.Text.Encoding.ASCII.GetBytes(textBox12.Text);
-                        stream.Write(data, 0, data.Length);
+                        if (command != null)
+                        {
+                            data = System.Text.Encoding.ASCII.GetBytes(command);
+                            stream.Write(data, 0, data.Length);
+                        }
                     }
 
-                    System.Threading.Thread.Sleep(70);
+                    System.Threading.Thread.Sleep(20);
                 }
 
                 //finger_x_plane();
 
-                last_degree_f01 = command_degree_f01;
-                last_degree_f02 = command_degree_f02;
-                last_degree_f03 = command_degree_f03;
-
-                last_degree_f11 = command_degree_f11;
-                last_degree_f12 = command_degree_f12;
-                last_degree_f13 = command_degree_f13;
-
-                last_degree_f21 = command_degree_f21;
-                last_degree_f22 = command_degree_f22;
-                last_degree_f23 = command_degree_f23;
 
                 richTextBox2.Text = frame.Timestamp.ToString();
                 
             }
 
-            for(int i = 0; i < 3; i++)
-            {
-                finger_exist[i] = false;
-            }
-
-            /*******************************************************
-             * update degree block
-             * 
-            *******************************************************/
-            foreach (Finger finger in frame.Fingers)
-            {
-                //get finger type
-                switch (finger.Type)
-                {
-                    case Finger.FingerType.TYPE_INDEX:
-                        finger_object[0] = finger;
-                        finger_exist[0] = true;
-                        break;
-
-                    case Finger.FingerType.TYPE_MIDDLE:
-                        finger_object[1] = finger;
-                        finger_exist[1] = true;
-                        break;
-
-                    case Finger.FingerType.TYPE_PINKY:
-                        finger_object[2] = finger;
-                        finger_exist[2] = true;
-                        break;
-                }
-
-                //get bones of finger
-                foreach (Bone.BoneType boneType in (Bone.BoneType[])Enum.GetValues(typeof(Bone.BoneType)))
-                {
-                    Bone bone = finger.Bone(boneType);
-
-                    switch(bone.Type)
-                    {
-                        case Bone.BoneType.TYPE_METACARPAL:
-                            bone_assignment(bone, finger);
-                            break;
-
-                        case Bone.BoneType.TYPE_PROXIMAL:
-                            bone_assignment(bone, finger);
-                            break;
-
-                        case Bone.BoneType.TYPE_INTERMEDIATE:
-                            bone_assignment(bone, finger);
-                            break;
-
-                        case Bone.BoneType.TYPE_DISTAL:
-                            bone_assignment(bone, finger);
-                            break;
-                    }
-                }
-            }
+            thumb_exist = false;
+            index_exist = false;
+            middle_exist = false;
          }
 
-        public bool send_validation()
+        public float ToDegrees(float Radian)
         {
-            if (Math.Abs(last_degree_f01 - command_degree_f01) >= sensitivity)
-                return true;
-            if (Math.Abs(last_degree_f02 - command_degree_f02) >= sensitivity)
-                return true;
-            if (Math.Abs(last_degree_f03 - command_degree_f03) >= sensitivity)
-                return true;
-            if (Math.Abs(last_degree_f11 - command_degree_f11) >= sensitivity)
-                return true;
-            if (Math.Abs(last_degree_f12 - command_degree_f12) >= sensitivity)
-                return true;
-            if (Math.Abs(last_degree_f13 - command_degree_f13) >= sensitivity)
-                return true;
-            if (Math.Abs(last_degree_f21 - command_degree_f21) >= sensitivity)
-                return true;
-            if (Math.Abs(last_degree_f22 - command_degree_f22) >= sensitivity)
-                return true;
-            if (Math.Abs(last_degree_f23 - command_degree_f23) >= sensitivity)
-                return true;
-
-            return false;
-        }
-
-        public void degree_validation()
-        {
-            int last_digit;
-
-            last_digit = command_degree_f02 % 10;
-            command_degree_f02 = command_degree_f02 - last_digit;
-
-            if (last_digit >= 3)
-                command_degree_f02 += 5;
-
-            last_digit = command_degree_f03 % 10;
-            command_degree_f03 = command_degree_f03 - last_digit;
-
-            if (last_digit >= 3)
-                command_degree_f03 += 5;
-
-            last_digit = command_degree_f12 % 10;
-            command_degree_f12 = command_degree_f12 - last_digit;
-
-            if (last_digit >= 3)
-                command_degree_f12 += 5;
-
-            last_digit = command_degree_f13 % 10;
-            command_degree_f13 = command_degree_f13 - last_digit;
-
-            if (last_digit >= 3)
-                command_degree_f13 += 5;
-
-            last_digit = command_degree_f22 % 10;
-            command_degree_f22 = command_degree_f22 - last_digit;
-
-            if (last_digit >= 3)
-                command_degree_f22 += 5;
-
-            last_digit = command_degree_f23 % 10;
-            command_degree_f23 = command_degree_f23 - last_digit;
-
-            if (last_digit >= 3)
-                command_degree_f23 += 5;
-
-            last_digit = command_degree_f01 % 10;
-            command_degree_f01 = command_degree_f01 - last_digit;
-
-            if (last_digit >= 3)
-                command_degree_f01 += 5;
-
-            last_digit = command_degree_f11 % 10;
-            command_degree_f11 = command_degree_f11 - last_digit;
-
-            if (last_digit >= 3)
-                command_degree_f11 += 5;
-
-            last_digit = command_degree_f21 % 10;
-            command_degree_f21 = command_degree_f21 - last_digit;
-
-            if (last_digit >= 3)
-                command_degree_f21 += 5;
-
-           
-        }
-
-        public void bone_assignment(Bone bone, Finger finger)
-        {
-
-            if(bone.Type == Bone.BoneType.TYPE_METACARPAL)
-            {
-                switch (finger.Type)
-                {
-                    case Finger.FingerType.TYPE_INDEX:
-                        bone_object[0, 0] = bone;
-                        break;
-
-                    case Finger.FingerType.TYPE_MIDDLE:
-                        bone_object[1, 0] = bone;
-                        break;
-
-                    case Finger.FingerType.TYPE_PINKY:
-                        bone_object[2, 0] = bone;
-                        break;
-                }
-            }
-            else if(bone.Type == Bone.BoneType.TYPE_PROXIMAL)
-            {
-                switch (finger.Type)
-                {
-                    case Finger.FingerType.TYPE_INDEX:
-                        bone_object[0, 1] = bone;
-                        break;
-
-                    case Finger.FingerType.TYPE_MIDDLE:
-                        bone_object[1, 1] = bone;
-                        break;
-
-                    case Finger.FingerType.TYPE_PINKY:
-                        bone_object[2, 1] = bone;
-                        break;
-                }
-            }
-            else if(bone.Type == Bone.BoneType.TYPE_INTERMEDIATE)
-            {
-                switch (finger.Type)
-                {
-                    case Finger.FingerType.TYPE_INDEX:
-                        bone_object[0, 2] = bone;
-                        break;
-
-                    case Finger.FingerType.TYPE_MIDDLE:
-                        bone_object[1, 2] = bone;
-                        break;
-
-                    case Finger.FingerType.TYPE_PINKY:
-                        bone_object[2, 2] = bone;
-                        break;
-                }
-            }
-            else if(bone.Type == Bone.BoneType.TYPE_DISTAL)
-            {
-                switch (finger.Type)
-                {
-                    case Finger.FingerType.TYPE_INDEX:
-                        bone_object[0, 3] = bone;
-                        break;
-
-                    case Finger.FingerType.TYPE_MIDDLE:
-                        bone_object[1, 3] = bone;
-                        break;
-
-                    case Finger.FingerType.TYPE_PINKY:
-                        bone_object[2, 3] = bone;
-                        break;
-                }
-            }
-        }
-
-        public void finger_x_plane()
-        {
-            Matrix f0, f1, f2;
- 
-            //update_x = false;
-
-            f0 = bone_object[0, 0].Basis;
-            f1 = bone_object[1, 0].Basis;
-            f2 = bone_object[2, 0].Basis;
-
-            bone11_x_reference = f0.xBasis;
-            bone21_x_reference = f1.xBasis;
-            bone31_x_reference = f2.xBasis;
-        }
-
-        public void degree_conversion()
-        {
-            //x base is not useful in calculating relative reference
-            Matrix bone0, bone1, bone2, bone3;
-
-            Vector bone1_x, bone0_y, bone0_z;
-            Vector bone1_y, bone1_z;
-            Vector bone2_y, bone2_z;
-            Vector bone3_y, bone3_z;
-            Vector b1_x_norm, b0_y_norm, b0_z_norm;
-            Vector b1_y_norm, b1_z_norm;
-            Vector b2_y_norm, b2_z_norm;
-            Vector b3_y_norm, b3_z_norm;
-
-            double[] degree;
-            degree = new double[2];
-
-            if ((finger_object[0] != null || finger_object[1] != null || finger_object[2] != null))
-            {
-                finger_x_plane();
-                //update_x = false;
-            }
-
-
-            if (finger_object[0] != null)
-            {
-                if(initial_f1)
-                {
-                    initial_f1 = false;
-                    //finger 0 or index finger degree
-                    bone0 = bone_object[0, 0].Basis;
-                    bone1 = bone_object[0, 1].Basis;
-                    bone2 = bone_object[0, 2].Basis;
-                    bone3 = bone_object[0, 3].Basis;
-
-                    bone1_x = bone1.xBasis;
-                    bone0_y = bone0.yBasis;
-                    bone1_y = bone1.yBasis;
-                    bone2_y = bone2.yBasis;
-                    bone3_y = bone3.yBasis;
-
-                    bone0_z = bone0.zBasis;
-                    bone1_z = bone1.zBasis;
-                    bone2_z = bone2.zBasis;
-                    bone3_z = bone3.zBasis;
-
-                    b1_x_norm = bone1_x.Normalized;
-
-                    b0_y_norm = bone0_y.Normalized;
-                    b1_y_norm = bone1_y.Normalized;
-                    b2_y_norm = bone2_y.Normalized;
-                    b3_y_norm = bone3_y.Normalized;
-
-                    b0_z_norm = bone0_z.Normalized;
-                    b1_z_norm = bone1_z.Normalized;
-                    b2_z_norm = bone2_z.Normalized;
-                    b3_z_norm = bone3_z.Normalized;
-
-                    //richTextBox.AppendText("get value" + Environment.NewLine);
-
-                    double dotProduct_x_0 = b1_z_norm.Dot(bone21_x_reference);
-                    double dotProduct_y_0 = b0_y_norm.Dot(b1_y_norm);
-                    double dotProduct_y_1 = b1_y_norm.Dot(b2_y_norm);
-                    double dotProduct_z_0 = b0_z_norm.Dot(b1_z_norm);
-                    double dotProduct_z_1 = b1_z_norm.Dot(b2_z_norm);
-
-                    last_degree_x_f011 = Math.Acos(dotProduct_x_0) * (180 / Math.PI);
-                    last_degree_y_f01 = Math.Acos(dotProduct_y_0) * (180 / Math.PI);
-                    last_degree_y_f02 = Math.Acos(dotProduct_y_1) * (180 / Math.PI);
-                    last_degree_z_f01 = Math.Acos(dotProduct_z_0) * (180 / Math.PI);
-                    last_degree_z_f02 = Math.Acos(dotProduct_z_1) * (180 / Math.PI);
-
-                    command_degree_f01 = (int)last_degree_x_f011;
-                    command_degree_f02 = 180 - (int)(0.6 * last_degree_y_f01 + 0.4 * last_degree_z_f01);
-                    command_degree_f03 = 180 - (int)(0.6 * last_degree_y_f02 + 0.4 * last_degree_z_f02);
-
-
-                    textBox1.Text = command_degree_f02.ToString();
-                    textBox5.Text = command_degree_f01.ToString();
-                    textBox7.Text = command_degree_f03.ToString();
-
-                }
-                else
-                {
-                    //finger 0 or index finger degree
-                    bone0 = bone_object[0, 0].Basis;
-                    bone1 = bone_object[0, 1].Basis;
-                    bone2 = bone_object[0, 2].Basis;
-                    bone3 = bone_object[0, 3].Basis;
-
-                    bone1_x = bone1.xBasis;
-
-                    bone0_y = bone0.yBasis;
-                    bone1_y = bone1.yBasis;
-                    bone2_y = bone2.yBasis;
-                    bone3_y = bone3.yBasis;
-
-                    bone0_z = bone0.zBasis;
-                    bone1_z = bone1.zBasis;
-                    bone2_z = bone2.zBasis;
-                    bone3_z = bone3.zBasis;
-
-                    b1_x_norm = bone1_x.Normalized;
-
-                    b0_y_norm = bone0_y.Normalized;
-                    b1_y_norm = bone1_y.Normalized;
-                    b2_y_norm = bone2_y.Normalized;
-                    b3_y_norm = bone3_y.Normalized;
-
-                    b0_z_norm = bone0_z.Normalized;
-                    b1_z_norm = bone1_z.Normalized;
-                    b2_z_norm = bone2_z.Normalized;
-                    b3_z_norm = bone3_z.Normalized;
-
-                    //richTextBox.AppendText("get value" + Environment.NewLine);
-                    double dotProduct_x_0 = b1_z_norm.Dot(bone11_x_reference);
-                    double dotProduct_x_1 = b2_z_norm.Dot(bone11_x_reference);
-                    double dotProduct_x_2 = b3_z_norm.Dot(bone11_x_reference);
-
-                    double dotProduct_y_0 = b0_y_norm.Dot(b1_y_norm);
-                    double dotProduct_y_1 = b1_y_norm.Dot(b2_y_norm);
-                    double dotProduct_z_0 = b0_z_norm.Dot(b1_z_norm);
-                    double dotProduct_z_1 = b1_z_norm.Dot(b2_z_norm);
-
-                    last_degree_x_f011 = Math.Acos(dotProduct_x_0) * (180 / Math.PI);
-                    last_degree_x_f012 = Math.Acos(dotProduct_x_1) * (180 / Math.PI);
-                    last_degree_x_f013 = Math.Acos(dotProduct_x_2) * (180 / Math.PI);
-
-                    last_degree_y_f01 = Math.Acos(dotProduct_y_0) * (180 / Math.PI);
-                    last_degree_y_f02 = Math.Acos(dotProduct_y_1) * (180 / Math.PI);
-                    last_degree_z_f01 = Math.Acos(dotProduct_z_0) * (180 / Math.PI);
-                    last_degree_z_f02 = Math.Acos(dotProduct_z_1) * (180 / Math.PI);
-
-                    command_degree_f01 = (int) (0.3 * last_degree_x_f011 + 0.3 * last_degree_x_f012 + 0.4 * last_degree_x_f013);
-
-                    if (command_degree_f01 > 90)
-                        command_degree_f01 = command_degree_f01 + 5;
-                    else
-                        command_degree_f01 = command_degree_f01 - 5;
-
-                    command_degree_f02 = 180 - (int) (0.6 * last_degree_y_f01 + 0.4 * last_degree_z_f01);
-                    command_degree_f03 = 180 - (int) (0.6 * last_degree_y_f02 + 0.4 * last_degree_z_f02);
-                    //Vector speed = finger_object[0].TipVelocity;
-                    //float speed_1 = speed.Magnitude;
-                    //richTextBox.AppendText(bone_object[0, 0].Type + Environment.NewLine);
-                    //richTextBox.AppendText(bone_object[0, 1].Type + Environment.NewLine);
-                    //richTextBox.AppendText(bone_object[0, 2].Type + Environment.NewLine);
-                    //richTextBox.AppendText(bone_object[0, 3].Type + Environment.NewLine);
-                    textBox1.Text = command_degree_f02.ToString();
-                    textBox5.Text = command_degree_f01.ToString();
-                    textBox7.Text = command_degree_f03.ToString();
-                }
-               
-            }
-
-            if (finger_object[1] != null)
-            {
-                if (initial_f2)
-                {
-                    initial_f2 = false;
-                 
-                    //finger 0 or index finger degree
-                    bone0 = bone_object[1, 0].Basis;
-                    bone1 = bone_object[1, 1].Basis;
-                    bone2 = bone_object[1, 2].Basis;
-                    bone3 = bone_object[1, 3].Basis;
-
-                    bone1_x = bone1.xBasis;
-
-                    bone0_y = bone0.yBasis;
-                    bone1_y = bone1.yBasis;
-                    bone2_y = bone2.yBasis;
-                    bone3_y = bone3.yBasis;
-
-                    bone0_z = bone0.zBasis;
-                    bone1_z = bone1.zBasis;
-                    bone2_z = bone2.zBasis;
-                    bone3_z = bone3.zBasis;
-
-                    b1_x_norm = bone1_x.Normalized;
-
-                    b0_y_norm = bone0_y.Normalized;
-                    b1_y_norm = bone1_y.Normalized;
-                    b2_y_norm = bone2_y.Normalized;
-                    b3_y_norm = bone3_y.Normalized;
-
-                    b0_z_norm = bone0_z.Normalized;
-                    b1_z_norm = bone1_z.Normalized;
-                    b2_z_norm = bone2_z.Normalized;
-                    b3_z_norm = bone3_z.Normalized;
-
-                    //richTextBox.AppendText("get value" + Environment.NewLine);
-                    double dotProduct_x_0 = b1_z_norm.Dot(bone21_x_reference);
-                    double dotProduct_x_1 = b2_z_norm.Dot(bone21_x_reference);
-                    double dotProduct_x_2 = b3_z_norm.Dot(bone21_x_reference);
-
-                    double dotProduct_y_0 = b0_y_norm.Dot(b1_y_norm);
-                    double dotProduct_y_1 = b1_y_norm.Dot(b2_y_norm);
-                    double dotProduct_z_0 = b0_z_norm.Dot(b1_z_norm);
-                    double dotProduct_z_1 = b1_z_norm.Dot(b2_z_norm);
-
-                    last_degree_x_f111 = Math.Acos(dotProduct_x_0) * (180 / Math.PI);
-                    last_degree_x_f112 = Math.Acos(dotProduct_x_1) * (180 / Math.PI);
-                    last_degree_x_f113 = Math.Acos(dotProduct_x_2) * (180 / Math.PI);
-
-                    last_degree_y_f11 = Math.Acos(dotProduct_y_0) * (180 / Math.PI);
-                    last_degree_y_f12 = Math.Acos(dotProduct_y_1) * (180 / Math.PI);
-                    last_degree_z_f11 = Math.Acos(dotProduct_z_0) * (180 / Math.PI);
-                    last_degree_z_f12 = Math.Acos(dotProduct_z_1) * (180 / Math.PI);
-
-                    command_degree_f11 = (int)(0.3 * last_degree_x_f111 + 0.3 * last_degree_x_f112 + 0.4 * last_degree_x_f113);
-                    if (command_degree_f11 > 90)
-                        command_degree_f11 = command_degree_f11 + 5;
-                    else
-                        command_degree_f11 = command_degree_f11 - 5;
-
-                    command_degree_f12 = 180 - (int)(0.6 * last_degree_y_f11 + 0.4 * last_degree_z_f11);
-                    command_degree_f13 = 180 - (int)(0.6 * last_degree_y_f12 + 0.4 * last_degree_z_f12);
-
-                    textBox2.Text = command_degree_f12.ToString();
-                    textBox6.Text = command_degree_f11.ToString();
-                    textBox8.Text = command_degree_f13.ToString();
-                }
-
-                else
-                {
-                    //finger 0 or index finger degree
-                    bone0 = bone_object[1, 0].Basis;
-                    bone1 = bone_object[1, 1].Basis;
-                    bone2 = bone_object[1, 2].Basis;
-                    bone3 = bone_object[1, 3].Basis;
-
-                    bone1_x = bone1.xBasis;
-
-                    bone0_y = bone0.yBasis;
-                    bone1_y = bone1.yBasis;
-                    bone2_y = bone2.yBasis;
-                    bone3_y = bone3.yBasis;
-
-                    bone0_z = bone0.zBasis;
-                    bone1_z = bone1.zBasis;
-                    bone2_z = bone2.zBasis;
-                    bone3_z = bone3.zBasis;
-
-                    b1_x_norm = bone1_x.Normalized;
-
-                    b0_y_norm = bone0_y.Normalized;
-                    b1_y_norm = bone1_y.Normalized;
-                    b2_y_norm = bone2_y.Normalized;
-                    b3_y_norm = bone3_y.Normalized;
-
-                    b0_z_norm = bone0_z.Normalized;
-                    b1_z_norm = bone1_z.Normalized;
-                    b2_z_norm = bone2_z.Normalized;
-                    b3_z_norm = bone3_z.Normalized;
-
-                    //richTextBox.AppendText("get value" + Environment.NewLine);
-                    double dotProduct_x_0 = b1_z_norm.Dot(bone21_x_reference);
-                    double dotProduct_x_1 = b2_z_norm.Dot(bone21_x_reference);
-                    double dotProduct_x_2 = b3_z_norm.Dot(bone21_x_reference);
-
-                    double dotProduct_y_0 = b0_y_norm.Dot(b1_y_norm);
-                    double dotProduct_y_1 = b1_y_norm.Dot(b2_y_norm);
-                    double dotProduct_z_0 = b0_z_norm.Dot(b1_z_norm);
-                    double dotProduct_z_1 = b1_z_norm.Dot(b2_z_norm);
-
-                    last_degree_x_f111 = Math.Acos(dotProduct_x_0) * (180 / Math.PI);
-                    last_degree_x_f112 = Math.Acos(dotProduct_x_1) * (180 / Math.PI);
-                    last_degree_x_f113 = Math.Acos(dotProduct_x_2) * (180 / Math.PI);
-
-                    last_degree_y_f11 = Math.Acos(dotProduct_y_0) * (180 / Math.PI);
-                    last_degree_y_f12 = Math.Acos(dotProduct_y_1) * (180 / Math.PI);
-                    last_degree_z_f11 = Math.Acos(dotProduct_z_0) * (180 / Math.PI);
-                    last_degree_z_f12 = Math.Acos(dotProduct_z_1) * (180 / Math.PI);
-
-                    command_degree_f11 = (int)(0.3 * last_degree_x_f111 + 0.3 * last_degree_x_f112 + 0.4 * last_degree_x_f113);
-                    if (command_degree_f11 > 90)
-                        command_degree_f11 = command_degree_f11 + 5;
-                    else
-                        command_degree_f11 = command_degree_f11 - 5;
-
-                    command_degree_f12 = 180 - (int)(0.6 * last_degree_y_f11 + 0.4 * last_degree_z_f11);
-                    command_degree_f13 = 180 - (int)(0.6 * last_degree_y_f12 + 0.4 * last_degree_z_f12);
-
-                    textBox6.Text = command_degree_f11.ToString();
-                    textBox2.Text = command_degree_f12.ToString();
-                    textBox8.Text = command_degree_f13.ToString();
-                }
-            }
-
-            if (finger_object[2] != null)
-            {
-                if (initial_f3)
-                {
-                    initial_f3 = false;
-                    bone0 = bone_object[2, 0].Basis;
-                    bone1 = bone_object[2, 1].Basis;
-                    bone2 = bone_object[2, 2].Basis;
-                    bone3 = bone_object[2, 3].Basis;
-
-                    bone1_x = bone1.xBasis;
-
-                    bone0_y = bone0.yBasis;
-                    bone1_y = bone1.yBasis;
-                    bone2_y = bone2.yBasis;
-                    bone3_y = bone3.yBasis;
-
-                    bone0_z = bone0.zBasis;
-                    bone1_z = bone1.zBasis;
-                    bone2_z = bone2.zBasis;
-                    bone3_z = bone3.zBasis;
-
-                    b1_x_norm = bone1_x.Normalized;
-
-                    b0_y_norm = bone0_y.Normalized;
-                    b1_y_norm = bone1_y.Normalized;
-                    b2_y_norm = bone2_y.Normalized;
-                    b3_y_norm = bone3_y.Normalized;
-
-                    b0_z_norm = bone0_z.Normalized;
-                    b1_z_norm = bone1_z.Normalized;
-                    b2_z_norm = bone2_z.Normalized;
-                    b3_z_norm = bone3_z.Normalized;
-
-                    //richTextBox.AppendText("get value" + Environment.NewLine);
-                    double dotProduct_x_0 = b1_z_norm.Dot(bone31_x_reference);
-                    double dotProduct_x_1 = b2_z_norm.Dot(bone31_x_reference);
-                    double dotProduct_x_2 = b3_z_norm.Dot(bone31_x_reference);
-
-                    double dotProduct_y_0 = b0_y_norm.Dot(b1_y_norm);
-                    double dotProduct_y_1 = b1_y_norm.Dot(b2_y_norm);
-                    double dotProduct_z_0 = b0_z_norm.Dot(b1_z_norm);
-                    double dotProduct_z_1 = b1_z_norm.Dot(b2_z_norm);
-
-                    last_degree_x_f211 = Math.Acos(dotProduct_x_0) * (180 / Math.PI);
-                    last_degree_x_f212 = Math.Acos(dotProduct_x_1) * (180 / Math.PI);
-                    last_degree_x_f213 = Math.Acos(dotProduct_x_2) * (180 / Math.PI);
-
-                    last_degree_y_f21 = Math.Acos(dotProduct_y_0) * (180 / Math.PI);
-                    last_degree_y_f22 = Math.Acos(dotProduct_y_1) * (180 / Math.PI);
-                    last_degree_z_f21 = Math.Acos(dotProduct_z_0) * (180 / Math.PI);
-                    last_degree_z_f22 = Math.Acos(dotProduct_z_1) * (180 / Math.PI);
-
-                    command_degree_f21 = (int)(0.3 * last_degree_x_f111 + 0.3 * last_degree_x_f112 + 0.4 * last_degree_x_f113);
-                    if (command_degree_f21 > 90)
-                        command_degree_f21 = command_degree_f21 + 5;
-                    else
-                        command_degree_f21 = command_degree_f21 - 5;
-
-                    command_degree_f22 = 180 - (int)(0.5 * last_degree_z_f21 + 0.5 * last_degree_y_f21);
-                    command_degree_f23 = 180 - (int)(0.5 * last_degree_z_f22 + 0.5 * last_degree_y_f22);
-
-                    textBox3.Text = command_degree_f22.ToString();
-                    textBox10.Text = command_degree_f22.ToString();
-                    textBox9.Text = command_degree_f23.ToString();
-
-                }
-                else
-                {
-                    bone0 = bone_object[2, 0].Basis;
-                    bone1 = bone_object[2, 1].Basis;
-                    bone2 = bone_object[2, 2].Basis;
-                    bone3 = bone_object[2, 3].Basis;
-
-                    bone1_x = bone1.xBasis;
-
-                    bone0_y = bone0.yBasis;
-                    bone1_y = bone1.yBasis;
-                    bone2_y = bone2.yBasis;
-                    bone3_y = bone3.yBasis;
-
-                    bone0_z = bone0.zBasis;
-                    bone1_z = bone1.zBasis;
-                    bone2_z = bone2.zBasis;
-                    bone3_z = bone3.zBasis;
-
-                    b1_x_norm = bone1_x.Normalized;
-
-                    b0_y_norm = bone0_y.Normalized;
-                    b1_y_norm = bone1_y.Normalized;
-                    b2_y_norm = bone2_y.Normalized;
-                    b3_y_norm = bone3_y.Normalized;
-
-                    b0_z_norm = bone0_z.Normalized;
-                    b1_z_norm = bone1_z.Normalized;
-                    b2_z_norm = bone2_z.Normalized;
-                    b3_z_norm = bone3_z.Normalized;
-
-                    //richTextBox.AppendText("get value" + Environment.NewLine);
-                    double dotProduct_x_0 = b1_z_norm.Dot(bone31_x_reference);
-                    double dotProduct_x_1 = b2_z_norm.Dot(bone31_x_reference);
-                    double dotProduct_x_2 = b3_z_norm.Dot(bone31_x_reference);
-
-                    double dotProduct_y_0 = b0_y_norm.Dot(b1_y_norm);
-                    double dotProduct_y_1 = b1_y_norm.Dot(b2_y_norm);
-                    double dotProduct_z_0 = b0_z_norm.Dot(b1_z_norm);
-                    double dotProduct_z_1 = b1_z_norm.Dot(b2_z_norm);
-
-                    last_degree_x_f211 = Math.Acos(dotProduct_x_0) * (180 / Math.PI);
-                    last_degree_x_f212 = Math.Acos(dotProduct_x_1) * (180 / Math.PI);
-                    last_degree_x_f213 = Math.Acos(dotProduct_x_2) * (180 / Math.PI);
-
-                    last_degree_y_f21 = Math.Acos(dotProduct_y_0) * (180 / Math.PI);
-                    last_degree_y_f22 = Math.Acos(dotProduct_y_1) * (180 / Math.PI);
-                    last_degree_z_f21 = Math.Acos(dotProduct_z_0) * (180 / Math.PI);
-                    last_degree_z_f22 = Math.Acos(dotProduct_z_1) * (180 / Math.PI);
-
-                    command_degree_f21 = (int)(0.3 * last_degree_x_f211 + 0.3 * last_degree_x_f212 + 0.4 * last_degree_x_f213);
-                    if (command_degree_f21 > 90)
-                        command_degree_f21 = command_degree_f21 + 5;
-                    else
-                        command_degree_f21 = command_degree_f21 - 5;
-
-                    command_degree_f22 = 180 - (int)(0.5 * last_degree_z_f21 + 0.5 * last_degree_y_f21);
-                    command_degree_f23 = 180 - (int)(0.5 * last_degree_z_f22 + 0.5 * last_degree_y_f22);
-                   
-                    textBox3.Text = command_degree_f22.ToString();
-                    textBox10.Text = command_degree_f21.ToString();
-                    textBox9.Text = command_degree_f23.ToString();
-                }
-            }
-        }
-
-        public void mystoi()
-        {
-            track_resolution = Int64.Parse(textBox13.Text);
-        }
-
-        private void button1_Click(object sender, EventArgs e)
-        {
-            mystoi();
+            float degrees;
+            degrees = Radian * 180 / (float)Math.PI;
+            return degrees;
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -1024,37 +531,29 @@ namespace LeapPanel
             
         }
 
-        private void button2_Click(object sender, EventArgs e)
+        private void textBox_d1_TextChanged(object sender, EventArgs e)
         {
 
         }
-        private void faceButton_Click(object sender,EventArgs e)
+
+        private void label12_Click(object sender, EventArgs e)
         {
-            faceRecProcess = Process.Start("MultiFaceRec.exe");
-            faceRecProcess.EnableRaisingEvents = true;
-            faceRecProcess.Exited += onFaceRecProcessExit;
-            this.Enabled = false;
+
         }
 
-        private delegate void exitProcessCallBack(); //delegate of void func(void) type
-        private void enableForm()
+        private void label9_Click(object sender, EventArgs e)
         {
-            //enables the form
-            this.Enabled = true;
-            
+
         }
-        private void onFaceRecProcessExit(object sender,EventArgs e)
+
+        private void up_key_KeyDown(object sender, KeyEventArgs e)
         {
-            if(this.InvokeRequired)
-            {
-                var callBack = new exitProcessCallBack(enableForm);
-                this.Invoke(callBack);
-            }
-            else
-                this.Enabled = true;
+            //string G_str_Mode = "";
+            string G_str_text = e.KeyCode + ":" + e.Modifiers + ":" + e.KeyData + ":" + "(" + e.KeyValue + ")";
            
+            this.Text = G_str_text;  
+             
         }
-        
     }
 
     public interface ILeapEventDelegate
