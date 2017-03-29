@@ -35,7 +35,7 @@ pthread_mutex_t raw_data_lock = PTHREAD_MUTEX_INITIALIZER;
 
  char* chomp(char *);
  //uint8_t hash_key(void);
- uint8_t mystoi(char *);
+ int mystoi(char *);
  
  
  struct data{
@@ -162,12 +162,12 @@ pthread_mutex_t raw_data_lock = PTHREAD_MUTEX_INITIALIZER;
 				raw_curr = raw_head;
 				int counter = 0;
 				while(raw_curr != NULL){
-					printf("old data: %s\n", raw_curr->data);
+					//printf("old data: %s\n", raw_curr->data);
 					raw_curr = raw_curr->next;
 					counter++;
 				}
 				//printf("counter is %d\n", counter);
-				printf("-----------------------\n");
+				//printf("-----------------------\n");
 			}
 			else if(raw_head != NULL){
 				raw_curr = raw_head;	
@@ -179,19 +179,19 @@ pthread_mutex_t raw_data_lock = PTHREAD_MUTEX_INITIALIZER;
 				strcpy(raw_newdata->data, user_input);
 				raw_newdata->next = NULL;
 				raw_newdata->prev = raw_curr;
-				printf("new data: %s\n",raw_head->data);
+				//printf("new data: %s\n",raw_head->data);
 
-				printf("-----------------------\n");
+				//printf("-----------------------\n");
 				raw_curr = raw_head;
 				int counter = 0;
 				while(raw_curr != NULL){
-					printf("old data: %s\n", raw_curr->data);
+					//printf("old data: %s\n", raw_curr->data);
 					raw_curr = raw_curr->next;
 					counter++;
 				}
 				//printf("counter is %d\n", counter);
-				printf("-----------------------\n");
-				printf("%s\n",raw_newdata->data);
+				//printf("-----------------------\n");
+				//printf("%s\n",raw_newdata->data);
 			}
 			pthread_mutex_unlock(&raw_data_lock);
 		}	
@@ -205,23 +205,27 @@ pthread_mutex_t raw_data_lock = PTHREAD_MUTEX_INITIALIZER;
 
  void thread_maintain_database(void * thread_id){
 	//recevie control terminal and maintan databse
-	//uint16_t servo_number;
-	//uint8_t id = *((uint8_t*)thread_id);
-	struct servo * newservodata;
 	struct data * raw_curr;
 	struct data * raw_prev = NULL;
 	//struct servo * servo_curr;
 	printf("maintan thread is created\n");
 
-	char *token;
 	char data[50];
-	uint8_t finger_number; //same as thread_id and index
+	int i;
+	//uint8_t finger_number; //same as thread_id and index
 	//uint8_t anker_number_1, anker_number_2, anker_number_3;
-	uint8_t degree_1, degree_2, degree_3;
-	uint8_t last_degree_1 = 0;
-    uint8_t	last_degree_2 = 0;
-    uint8_t	last_degree_3 = 0;
-	uint8_t data_counter = 0;
+	int ip_degree;
+	int pm_degree;
+	int forward_displacement;
+	int backward_displacement;
+	int leftward_displacement;
+	int rightward_displacement;
+	
+	int hand_x_position;
+	int hand_y_position;
+	int hand_z_position;
+
+	int roll_degree; 
 
 	while(1){
 		raw_curr = raw_head;
@@ -259,82 +263,24 @@ pthread_mutex_t raw_data_lock = PTHREAD_MUTEX_INITIALIZER;
 					free(raw_curr->data);
 					free(raw_curr);
 				}
-			
-				token = strtok(data, "-");
-				//printf("hehe\n");
-				while(token != NULL){
 
-					if(data_counter == 0){
-						finger_number = mystoi(token);
-						//printf("finger %d\n", finger_number);
-						data_counter ++;
-					}
-					else if(data_counter == 1){
-						//printf("parsing anker_1 %s\n", token);
-						//anker_number_1 = mystoi(token);
-						//printf("parsed anker_1 %d\n", anker_number_1);
-						data_counter++;
-					}
-					else if (data_counter == 2){
-						//printf("parsing degree_1 is %s\n", token);
-						degree_1 = mystoi(token);
-						
-						if(degree_1 > 180)
-							degree_1 = last_degree_1;
-						//printf("parsed degree_1 is %d\n", degree_1);
-						data_counter++;
-					}
-					else if (data_counter == 3){
-						//printf("parsing anker_2 is %s\n", token);
-						//anker_number_2 = mystoi(token);
-						//printf("parsed anker_2 is %d\n", anker_number_2);
-						data_counter++;
-					}
-					else if (data_counter == 4){
-						//printf("parsing degree_2 is %s\n", token);
-						degree_2 = mystoi(token);
-						
-						if(degree_2 > 180)
-							degree_2 = last_degree_2;
-						//printf("parsed degree_2 is %d\n", degree_2);
-						data_counter++;
-					}
-					else if (data_counter == 5){
-						//printf("parsing anker_3 is %s\n", token);
-						//anker_number_3 = mystoi(token);
-						//printf("parsed anker_3 is %d\n", anker_number_3);
-						data_counter++;
-					}
-					else if (data_counter == 6){
-						//printf("parsing degree_3 is %s\n", token);
-						degree_3 = mystoi(token);
-						
-						if(degree_3 > 180)
-							degree_3 = last_degree_3;
-						data_counter = 0;
-					}
+				sscanf(data, "%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d", 
+						&i, &pm_degree, &ip_degree,
+						&forward_displacement, &backward_displacement,
+						&rightward_displacement, &leftward_displacement,
+						&hand_x_position, &hand_y_position, &hand_z_position,
+						&roll_degree
+					   );
+				bzero(data, 50);
 
-					token = strtok(NULL, "-");
-
-				}
-		
-				newservodata = (struct servo *)malloc(sizeof(struct servo));
-			
-
-				newservodata->finger = finger_number;
-				newservodata->last_degree = last_degree_1; 
-				newservodata->degree = degree_1;
-				
-				
-				last_degree_1 = degree_1;
-		
-
-				if(newservodata->degree != newservodata->last_degree){
-					set_servo(SERVOHATADDR, CHANNELTEST, SERVO_FREQUENCY, degree_2);
-				}
-
-			
-				free(newservodata);					
+				printf("pm_degree: %d\n", pm_degree);
+				printf("ip_degree: %d\n", ip_degree);
+				printf("rightward_displacement: %d\n", rightward_displacement);
+				printf("hand_x_position: %d\n", hand_x_position);
+				printf("hand_y_position: %d\n", hand_y_position);
+				printf("hand_z_position: %d\n", hand_z_position);
+				printf("roll_degree: %d\n", roll_degree);		
+				//set_servo(SERVOHATADDR, CHANNELTEST, SERVO_FREQUENCY, hand_y_position);		
 				pthread_mutex_unlock(&raw_data_lock);
 			}
     	}
@@ -361,22 +307,36 @@ pthread_mutex_t raw_data_lock = PTHREAD_MUTEX_INITIALIZER;
 	return newstring;
  }
 
-uint8_t mystoi(char * str){
+int mystoi(char * str){
 
 	uint8_t length = strlen(str);
 	uint8_t i;
 	uint8_t multiplier;
-	uint8_t real_integer = 0;
+	int real_integer = 0;
 	// printf("length is %d\n", length);
-	for(i = 0;  i < length; i++){
-		
-		if(i == 0)
-			multiplier = 1;
-		else 
-			multiplier = 10;
+	if(str[0] == '-'){
+		for(i = 1;  i < length; i++){
+			if(i == 1)
+				multiplier = 1;
+			else 
+				multiplier = 10;
 
-		real_integer = real_integer*multiplier + (str[i] - '0');
+			real_integer = real_integer*multiplier + (str[i] - '0');
+		}
+
+		real_integer = real_integer * (-1);
 	}
+	else{
+		for(i = 0;  i < length; i++){
+			if(i == 0)
+				multiplier = 1;
+			else 
+				multiplier = 10;
+
+			real_integer = real_integer*multiplier + (str[i] - '0');
+		}
+	}
+
 
 	return real_integer;
  }
