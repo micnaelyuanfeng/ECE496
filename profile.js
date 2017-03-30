@@ -73,7 +73,7 @@ $('document').ready(function(){
 			
 			return newEvent;
 		}
-		
+	
 		$("#add-course-button").on("click", function(){
 			var valid = validateForm();
 
@@ -87,6 +87,39 @@ $('document').ready(function(){
 				;
 			}
 				
+		});
+		
+			/*
+		<p id="profile_name">Name: Yuan Feng</p>
+					<p id="profile_password">Password: Yuan Feng</p>
+					<p id="profile_street">Address: 1101 Bay Street</p>
+					<p id="profile_name">Hobby: Web Programming</p>
+		*/
+		
+		$("#submit_profile_info").on("click", function(){
+			var new_name = document.getElementById("name-edit-name").value;
+			var new_password = document.getElementById("name-edit-password").value;
+			var new_address = document.getElementById("name-edit-address").value;	
+			var new_hobby = document.getElementById("name-edit-hobby").value;
+			
+			//window.alert(new_hobby);
+			var str = "";
+			var password_locator = document.getElementById('profile_name');
+			str = "Name: " + new_name;
+			password_locator.innerHTML = str;
+
+			var password_locator = document.getElementById('profile_password');
+			str = "Password: " + new_password;
+			password_locator.innerHTML = str;
+			
+			var address_locator = document.getElementById('profile_address');
+			str = "Address: " + new_address;
+			address_locator.innerHTML = str;
+			
+			var hobby_locator = document.getElementById('profile_hobby');
+			str = "Hobby: " + new_hobby;
+			hobby_locator.innerHTML = str;
+			
 		});
 	
 });
