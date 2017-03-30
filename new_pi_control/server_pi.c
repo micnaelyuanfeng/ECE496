@@ -10,15 +10,12 @@
  #include "Standard_Library.h"
  #include "System_Library.h"
  #include "PCA9685.h"
+ #include "Data_Macro.h"
 
- #define block 4;
- #define MAGICNUM 2
- #define ASCII_A 65
  //Thread
  /*************************************************/
- pthread_t thread_base[2];
- int thread_fd[2];
- int thread_id[2];
+ pthread_t thread_base;
+ int thread_id;
 
 /*************conditional variable********************/
 pthread_mutex_t m = PTHREAD_MUTEX_INITIALIZER;
@@ -32,53 +29,10 @@ pthread_mutex_t raw_data_lock = PTHREAD_MUTEX_INITIALIZER;
 
  /***************function block***********************/
  void thread_maintain_database(void *);
-
- char* chomp(char *);
- //uint8_t hash_key(void);
- int mystoi(char *);
  
- 
- struct data{
-	char * data;
-	struct data * next;
-	struct data * prev;
- };
-
- struct servo{
- 	uint8_t finger;
-	uint8_t degree;
-	uint8_t last_degree;
-
-	struct servo * next;
-	struct servo * prev;
- };
-
- struct servo * servo_head = NULL;
- struct servo * servo_curr = NULL;
- struct servo * servo_prev = NULL;
-
- struct data * raw_head = NULL;
- struct data * raw_newdata = NULL;
- struct data * raw_curr = NULL; 
-/*************************************************/
-//servo
- #define SERVO_FREQUENCY 50 
- #define SERVOHATADDR 0x40
- #define CHANNELTEST 0
- 
-//motor
- #define MOTORADDRESS 0x60
- #define CHANNELTEST 0
- #define SPEEDTEST 220
- #define DIRECTIONTEST 1
- #define MOTOR_FREQUENCY 1600
-/*************************************************/
-
  int main(void){
- 
-	uint8_t thread_counter = 0;
-	char user_input[50];
-	
+	char user_input[BUFFER_SIZE];
+	uint8_t tid = 0;
 	bzero((char *)&server_addr, sizeof(server_addr));
 	/******************************************
 	Peripheral initialization
@@ -107,13 +61,13 @@ pthread_mutex_t raw_data_lock = PTHREAD_MUTEX_INITIALIZER;
   
 	/*****************************************/
 	printf("main Thread Creating Threads\n");
-	printf("Creating servo thread %d\n", thread_counter);
-	thread_id[thread_counter] = pthread_create(&thread_base[thread_counter], NULL, (void*)thread_maintain_database, (void *)&thread_counter);
+	printf("Creating servo thread...\n");
+	thread_id = pthread_create(&thread_base, NULL, (void*)thread_maintain_database, (void *)&tid);
 
 
 	//main thread for getting control data from pi
 	get_connection(&server_addr, &sockfd);
-	listen(sockfd, 128);
+	listen(sockfd, 5);
 	bzero((char *)&client_addr, sizeof(client_addr));
 	clienlen = sizeof(client_addr);
 	newconnection = accept(sockfd, (struct sockaddr*)&client_addr, &clienlen);
@@ -134,8 +88,8 @@ pthread_mutex_t raw_data_lock = PTHREAD_MUTEX_INITIALIZER;
 
 	while(1){
 		//printf("haha\n");
-		bzero(user_input, 50);
-		int n = read(newconnection, user_input, 50);
+		bzero(user_input, BUFFER_SIZE);
+		int n = read(newconnection, user_input, BUFFER_SIZE);
 		
 		if(n < 0)
 			 perror("error: ");
@@ -144,9 +98,9 @@ pthread_mutex_t raw_data_lock = PTHREAD_MUTEX_INITIALIZER;
 		
 		
 		//printf("dido\n");
-		if(n < 40){    
+		if(n < BUFFER_SIZE){    
 			raw_newdata = (struct data *)malloc(sizeof(struct data));
-			raw_newdata->data = (char *)malloc(sizeof(char) * 50);
+			raw_newdata->data = (char *)malloc(sizeof(char) * BUFFER_SIZE);
 
 			
 			pthread_mutex_lock(&raw_data_lock);
@@ -210,7 +164,7 @@ pthread_mutex_t raw_data_lock = PTHREAD_MUTEX_INITIALIZER;
 	//struct servo * servo_curr;
 	printf("maintan thread is created\n");
 
-	char data[50];
+	char data[BUFFER_SIZE];
 	int i;
 	//uint8_t finger_number; //same as thread_id and index
 	//uint8_t anker_number_1, anker_number_2, anker_number_3;
@@ -271,15 +225,105 @@ pthread_mutex_t raw_data_lock = PTHREAD_MUTEX_INITIALIZER;
 						&hand_x_position, &hand_y_position, &hand_z_position,
 						&roll_degree
 					   );
-				bzero(data, 50);
-
+				/*
+				bzero(data, BUFFER_SIZE);
 				printf("pm_degree: %d\n", pm_degree);
 				printf("ip_degree: %d\n", ip_degree);
 				printf("rightward_displacement: %d\n", rightward_displacement);
 				printf("hand_x_position: %d\n", hand_x_position);
 				printf("hand_y_position: %d\n", hand_y_position);
 				printf("hand_z_position: %d\n", hand_z_position);
-				printf("roll_degree: %d\n", roll_degree);		
+				printf("roll_degree: %d\n", roll_degree);	
+				*/
+				if(hand_x_position > 90)
+					hand_x_position = 90;
+				else if (hand_x_position < -90)
+					hand_x_position = -90;
+
+				hand_x_position += 90;
+
+				if(hand_y_position > 90)
+					hand_y_position = 90;
+				else if (hand_y_position < -90)
+					hand_y_position = -90;
+
+				hand_y_position += 90;
+
+				if(hand_z_position > 90)
+					hand_z_position = 90;
+				if (hand_z_position < -90)
+					hand_z_position = -90;
+
+				hand_z_position += 90;
+
+				if(roll_degree > 90)
+					roll_degree = 90;
+				else if (roll_degree < -90)
+					roll_degree = -90;
+
+				roll_degree += 90;
+
+				if(ip_degree > 90)
+					ip_degree = 90;
+				else if (ip_degree < -90)
+					ip_degree = -90;
+
+				ip_degree += 90;
+
+				if(pm_degree > 90)
+					pm_degree = 90;
+				else if (pm_degree < -90)
+					pm_degree = -90;
+
+				pm_degree += 90;
+				/*
+				printf("pm_degree: %d\n", pm_degree);
+				printf("ip_degree: %d\n", ip_degree);
+				printf("rightward_displacement: %d\n", rightward_displacement);
+				printf("hand_x_position: %d\n", hand_x_position);
+				printf("hand_y_position: %d\n", hand_y_position);
+				printf("hand_z_position: %d\n", hand_z_position);
+				printf("roll_degree: %d\n", roll_degree);	
+				*/
+				//if(i == 0){
+					//printf("send thumb command...\n");
+					set_servo(SERVOHATADDR, PM_CHANNEL , SERVO_FREQUENCY, pm_degree);
+					set_servo(SERVOHATADDR, IP_CHANNEL , SERVO_FREQUENCY, ip_degree);
+					set_servo(SERVOHATADDR, FW_CHANNEL , SERVO_FREQUENCY, 5);
+					set_servo(SERVOHATADDR, BW_CHANNEL , SERVO_FREQUENCY, 5);
+					set_servo(SERVOHATADDR, RT_CHANNEL , SERVO_FREQUENCY, 5);
+					set_servo(SERVOHATADDR, LF_CHANNEL , SERVO_FREQUENCY, 5);
+					set_servo(SERVOHATADDR, UD_CHANNEL , SERVO_FREQUENCY, hand_x_position);
+					set_servo(SERVOHATADDR, FB_CHANNEL , SERVO_FREQUENCY, hand_y_position);
+					set_servo(SERVOHATADDR, LR_CHANNEL , SERVO_FREQUENCY, hand_z_position);
+					set_servo(SERVOHATADDR, RO_CHANNEL , SERVO_FREQUENCY, roll_degree);
+				/*}
+				else if(i == 1){
+					//printf("send index command...\n");
+					set_servo(SERVOHATADDR, PM_CHANNEL , SERVO_FREQUENCY, pm_degree);
+					set_servo(SERVOHATADDR, IP_CHANNEL , SERVO_FREQUENCY, ip_degree);
+					set_servo(SERVOHATADDR, FW_CHANNEL , SERVO_FREQUENCY, 5);
+					set_servo(SERVOHATADDR, BW_CHANNEL , SERVO_FREQUENCY, 5);
+					set_servo(SERVOHATADDR, RT_CHANNEL , SERVO_FREQUENCY, 5);
+					set_servo(SERVOHATADDR, LF_CHANNEL , SERVO_FREQUENCY, 5);
+					set_servo(SERVOHATADDR, UD_CHANNEL , SERVO_FREQUENCY, hand_x_position);
+					set_servo(SERVOHATADDR, FB_CHANNEL , SERVO_FREQUENCY, hand_y_position);
+					set_servo(SERVOHATADDR, LR_CHANNEL , SERVO_FREQUENCY, hand_z_position);
+					set_servo(SERVOHATADDR, RO_CHANNEL , SERVO_FREQUENCY, roll_degree);
+				}
+				else if(i == 2){
+					//printf("send middle command...\n");
+					set_servo(SERVOHATADDR, PM_CHANNEL , SERVO_FREQUENCY, pm_degree);
+					set_servo(SERVOHATADDR, IP_CHANNEL , SERVO_FREQUENCY, ip_degree);
+					set_servo(SERVOHATADDR, FW_CHANNEL , SERVO_FREQUENCY, 5);
+					set_servo(SERVOHATADDR, BW_CHANNEL , SERVO_FREQUENCY, 5);
+					set_servo(SERVOHATADDR, RT_CHANNEL , SERVO_FREQUENCY, 5);
+					set_servo(SERVOHATADDR, LF_CHANNEL , SERVO_FREQUENCY, 5);
+					set_servo(SERVOHATADDR, UD_CHANNEL , SERVO_FREQUENCY, hand_x_position);
+					set_servo(SERVOHATADDR, FB_CHANNEL , SERVO_FREQUENCY, hand_y_position);
+					set_servo(SERVOHATADDR, LR_CHANNEL , SERVO_FREQUENCY, hand_z_position);
+					set_servo(SERVOHATADDR, RO_CHANNEL , SERVO_FREQUENCY, roll_degree);
+				}*/
 				//set_servo(SERVOHATADDR, CHANNELTEST, SERVO_FREQUENCY, hand_y_position);		
 				pthread_mutex_unlock(&raw_data_lock);
 			}
@@ -289,54 +333,4 @@ pthread_mutex_t raw_data_lock = PTHREAD_MUTEX_INITIALIZER;
 	}
 
 	pthread_exit(NULL);
- }
-
- char * chomp(char * string){
-
-	int length = strlen(string);
-	int i = 0;
-	char * newstring = (char *)malloc((length -1)*sizeof(char));
-
-	for(i = 0; i < (length-1); i ++){
-		newstring[i] = string[i];
-	}
-	
-	//need to add, then there is extra '0', not 
-	newstring[i] = 0;
-	
-	return newstring;
- }
-
-int mystoi(char * str){
-
-	uint8_t length = strlen(str);
-	uint8_t i;
-	uint8_t multiplier;
-	int real_integer = 0;
-	// printf("length is %d\n", length);
-	if(str[0] == '-'){
-		for(i = 1;  i < length; i++){
-			if(i == 1)
-				multiplier = 1;
-			else 
-				multiplier = 10;
-
-			real_integer = real_integer*multiplier + (str[i] - '0');
-		}
-
-		real_integer = real_integer * (-1);
-	}
-	else{
-		for(i = 0;  i < length; i++){
-			if(i == 0)
-				multiplier = 1;
-			else 
-				multiplier = 10;
-
-			real_integer = real_integer*multiplier + (str[i] - '0');
-		}
-	}
-
-
-	return real_integer;
  }

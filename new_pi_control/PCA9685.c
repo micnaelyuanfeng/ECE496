@@ -70,7 +70,7 @@ void writeByte_PCA9685(uint8_t hwAddress, uint8_t writeAddress, uint8_t writeDat
 	// Wait BSC write complete 
 	int timeoutInterval = 50;
 	while(!(BSC0_S & BSC_S_DONE)) {
-		usleep(1000);
+		usleep(100);
 		timeoutInterval --;
 		if(!timeoutInterval){
 			printf("Time out occurred at writeByte_PCA9685. Hardware Address: %X. Write Address: %x. Write Data: %x.\n Program Exit...\n", hwAddress, writeAddress, writeData);
@@ -95,7 +95,7 @@ uint8_t readByte_PCA9685(uint8_t hwAddress, uint8_t readAddress){
 	// Wait BSC write complete 
 	int timeoutInterval = 50;
 	while(!(BSC0_S & BSC_S_DONE)) {
-		usleep(1000);
+		usleep(100);
 		timeoutInterval --;
 		if(!timeoutInterval){
 			printf("Time out occurred at readByte_PCA9685. Hardware Address: 08%X. Write Address: %x. Write Data: %x.\n Program Exit...\n", hwAddress, readAddress);
@@ -113,7 +113,7 @@ uint8_t readByte_PCA9685(uint8_t hwAddress, uint8_t readAddress){
 	// Wait BSC read complete 
 	timeoutInterval = 50;
 	while(!(BSC0_S & BSC_S_DONE)) {
-		usleep(1000);
+		usleep(100);
 		timeoutInterval --;
 		if(!timeoutInterval){
 			printf("Time out occured at readByte_PCA9685. Hardware Address: %x. Write Address: %x. Write Data: %x.\n Program Exit...\n", hwAddress, readAddress);
