@@ -62,30 +62,44 @@ namespace LeapPanel
         private bool rightKeyPressed = false;
         #endregion
 
+        private int modulation = 3;
+
         int hand_position_x;
         int hand_position_y; 
         int hand_position_z;
+        int last_hand_position_x = -100;
+        int last_hand_position_y = -100;
+        int last_hand_position_z = -100;
+
         float roll;
         int roll_degrees;
+        int last_roll_degrees = -100;
+
         double thumb_PM_dot;
         double thumb_IP_dot;
         double thumb_pm_degree;
         double thumb_ip_degree;
+        double last_thumb_PM_degree = -100;
+        double last_thumb_IP_degree = -100;
 
         double index_PM_dot;
         double index_IP_dot;
         double index_pm_degree;
         double index_ip_degree;
+        double last_index_PM_degree = -100;
+        double last_index_IP_degree = -100;
 
         double middle_PM_dot;
         double middle_IP_dot;
         double middle_pm_degree;
         double middle_ip_degree;
+        double last_middle_PM_degree = -100;
+        double last_middle_IP_degree = -100;
 
         private bool start_track = true;
         private float time_track_1;
         //private float time_track_2;
-        private double track_resolution = 250000;
+        private double track_resolution = 1500;
 
         private int last_position_x = 0;
         private int last_position_y = 0;
@@ -444,9 +458,12 @@ namespace LeapPanel
         {
             richTextBox.Text = frame.Timestamp.ToString();
 
-            //char name = Console.ReadKey();
-
-            //up_key.Text = name.ToString();
+            double diff_pm;
+            double diff_ip;
+            double diff_roll;
+            double diff_hand_position_x;
+            double diff_hand_position_y;
+            double diff_hand_position_z;
 
             if(start_track)
             {
@@ -462,89 +479,151 @@ namespace LeapPanel
                 if (true)
                 {
                     //finger 0(1)
-                    if(thumb_exist == true)
-                        command = "0" + "-" + ((int)thumb_pm_degree).ToString()
-                                   + "-" + ((int)thumb_ip_degree).ToString() 
-                                   + "-" + ((int)thumb_ip_degree).ToString()
-                                   + "-" + ((int)forward_move).ToString()
-                                   + "-" + ((int)backward_move).ToString()
-                                   + "-" + ((int)right_move).ToString()
-                                   + "-" + ((int)left_move).ToString()
-                                   + "-"  + ((int)hand_position_x).ToString()
-                                   + "-" + ((int)hand_position_y).ToString()
-                                   + "-" + ((int)hand_position_z).ToString()
-                                   + "-" + ((int)roll_degrees).ToString();
-                    //add move command from keyboard
-                    //add finger 1 and finger 2 data
-
-
-                    System.Threading.Thread.Sleep(20);
-
-                    if (tcpclnt.Connected)
+                    if (thumb_exist == true)
                     {
-                        NetworkStream stream = tcpclnt.GetStream();
-                        if (command != null)
+                        diff_pm = Math.Abs(thumb_pm_degree - last_thumb_PM_degree);
+                        diff_ip = Math.Abs(thumb_ip_degree - last_thumb_IP_degree);
+                        diff_roll = Math.Abs(roll_degrees - last_roll_degrees);
+                        diff_hand_position_x = Math.Abs(hand_position_x - last_position_x);
+                        diff_hand_position_y = Math.Abs(hand_position_y - last_position_y);
+                        diff_hand_position_z = Math.Abs(hand_position_z - last_position_z);
+
+                        if (diff_pm > modulation || diff_ip > modulation || diff_roll > modulation ||
+                            diff_hand_position_x > modulation || diff_hand_position_y > modulation ||
+                            diff_hand_position_z > modulation)
                         {
-                            data = System.Text.Encoding.ASCII.GetBytes(command);
-                            stream.Write(data, 0, data.Length);
+                            command = "0" + ":" + ((int)thumb_pm_degree).ToString()
+                                       + ":" + ((int)thumb_ip_degree).ToString()
+                                       + ":" + ((int)forward_move).ToString()
+                                       + ":" + ((int)backward_move).ToString()
+                                       + ":" + ((int)right_move).ToString()
+                                       + ":" + ((int)left_move).ToString()
+                                       + ":" + ((int)hand_position_x).ToString()
+                                       + ":" + ((int)hand_position_y).ToString()
+                                       + ":" + ((int)hand_position_z).ToString()
+                                       + ":" + ((int)roll_degrees).ToString();
+                            //add move command from keyboard
+                            //add finger 1 and finger 2 data
+
+                            if (tcpclnt.Connected)
+                            {
+                                NetworkStream stream = tcpclnt.GetStream();
+                                if (command != null)
+                                {
+                                    data = System.Text.Encoding.ASCII.GetBytes(command);
+                                    stream.Write(data, 0, data.Length);
+                                }
+                            }
+
+                            last_position_x = hand_position_x;
+                            last_position_y = hand_position_y;
+                            last_position_z = hand_position_z;
+                            last_roll_degrees = roll_degrees;
+                            last_thumb_IP_degree = thumb_ip_degree;
+                            last_thumb_PM_degree = thumb_pm_degree;
+
+                            System.Threading.Thread.Sleep(20);
                         }
                     }
 
+                   
                     //finger 1(2)
-                    if(middle_exist == true)
-                        command = "1" + "-" + ((int)thumb_pm_degree).ToString()
-                                   + "-" + ((int)thumb_ip_degree).ToString()
-                                   + "-" + ((int)thumb_ip_degree).ToString()
-                                   + "-" + ((int)forward_move).ToString()
-                                   + "-" + ((int)backward_move).ToString()
-                                   + "-" + ((int)right_move).ToString()
-                                   + "-" + ((int)left_move).ToString()
-                                   + "-" + ((int)hand_position_x).ToString()
-                                   + "-" + ((int)hand_position_y).ToString()
-                                   + "-" + ((int)hand_position_z).ToString()
-                                   + "-" + ((int)roll_degrees).ToString();
-                    if (tcpclnt.Connected)
+                    if (middle_exist == true)
                     {
-                        NetworkStream stream = tcpclnt.GetStream();
-                        if (command != null)
-                        {
-                            data = System.Text.Encoding.ASCII.GetBytes(command);
-                            stream.Write(data, 0, data.Length);
+                        diff_pm = Math.Abs(middle_pm_degree - last_middle_PM_degree);
+                        diff_ip = Math.Abs(middle_ip_degree - last_middle_IP_degree);
+                        diff_roll = Math.Abs(roll_degrees - last_roll_degrees);
+                        diff_hand_position_x = Math.Abs(hand_position_x - last_position_x);
+                        diff_hand_position_y = Math.Abs(hand_position_y - last_position_y);
+                        diff_hand_position_z = Math.Abs(hand_position_z - last_position_z);
+
+                        if (diff_pm > modulation || diff_ip > modulation || diff_roll > modulation ||
+                            diff_hand_position_x > modulation || diff_hand_position_y > modulation ||
+                            diff_hand_position_z > modulation
+                            ){
+                            command = "1" + ":" + ((int)middle_pm_degree).ToString()
+                                       + ":" + ((int)middle_ip_degree).ToString()
+                                       + ":" + ((int)forward_move).ToString()
+                                       + ":" + ((int)backward_move).ToString()
+                                       + ":" + ((int)right_move).ToString()
+                                       + ":" + ((int)left_move).ToString()
+                                       + ":" + ((int)hand_position_x).ToString()
+                                       + ":" + ((int)hand_position_y).ToString()
+                                       + ":" + ((int)hand_position_z).ToString()
+                                       + ":" + ((int)roll_degrees).ToString();
+
+                            if (tcpclnt.Connected)
+                            {
+                                NetworkStream stream = tcpclnt.GetStream();
+                                if (command != null)
+                                {
+                                    data = System.Text.Encoding.ASCII.GetBytes(command);
+                                    stream.Write(data, 0, data.Length);
+                                }
+                            }
+
+
+                            last_position_x = hand_position_x;
+                            last_position_y = hand_position_y;
+                            last_position_z = hand_position_z;
+                            last_roll_degrees = roll_degrees;
+                            last_middle_IP_degree = middle_ip_degree;
+                            last_middle_PM_degree = middle_pm_degree;
+
+                            System.Threading.Thread.Sleep(10);
                         }
                     }
-
-                    System.Threading.Thread.Sleep(20);
+                    
 
                     //finger 2(3)
-                       
-                    if(index_exist == true)
-                        command = "2" + "-" + ((int)thumb_pm_degree).ToString()
-                                  + "-" + ((int)thumb_ip_degree).ToString()
-                                  + "-" + ((int)thumb_ip_degree).ToString()
-                                  + "-" + ((int)forward_move).ToString()
-                                  + "-" + ((int)backward_move).ToString()
-                                  + "-" + ((int)right_move).ToString()
-                                  + "-" + ((int)left_move).ToString()
-                                  + "-" + ((int)hand_position_x).ToString()
-                                  + "-" + ((int)hand_position_y).ToString()
-                                  + "-" + ((int)hand_position_z).ToString()
-                                  + "-" + ((int)roll_degrees).ToString();
 
-                  
-                    
-                    if (tcpclnt.Connected)
+                    if (index_exist == true)
                     {
-                        NetworkStream stream = tcpclnt.GetStream();
-                        if (command != null)
-                        {
-                            data = System.Text.Encoding.ASCII.GetBytes(command);
-                            stream.Write(data, 0, data.Length);
+                        diff_pm = Math.Abs(index_pm_degree - last_index_PM_degree);
+                        diff_ip = Math.Abs(index_ip_degree - last_index_IP_degree);
+                        diff_roll = Math.Abs(roll_degrees - last_roll_degrees);
+                        diff_hand_position_x = Math.Abs(hand_position_x - last_position_x);
+                        diff_hand_position_y = Math.Abs(hand_position_y - last_position_y);
+                        diff_hand_position_z = Math.Abs(hand_position_z - last_position_z);
+
+                        if (diff_pm > modulation || diff_ip > modulation || diff_roll > modulation ||
+                            diff_hand_position_x > modulation || diff_hand_position_y > modulation ||
+                            diff_hand_position_z > modulation
+                            ){
+                            command = "2" + ":" + ((int)index_pm_degree).ToString()
+                                      + ":" + ((int)index_ip_degree).ToString()
+                                      + ":" + ((int)forward_move).ToString()
+                                      + ":" + ((int)backward_move).ToString()
+                                      + ":" + ((int)right_move).ToString()
+                                      + ":" + ((int)left_move).ToString()
+                                      + ":" + ((int)hand_position_x).ToString()
+                                      + ":" + ((int)hand_position_y).ToString()
+                                      + ":" + ((int)hand_position_z).ToString()
+                                      + ":" + ((int)roll_degrees).ToString();
+
+
+
+                            if (tcpclnt.Connected)
+                            {
+                                NetworkStream stream = tcpclnt.GetStream();
+                                if (command != null)
+                                {
+                                    data = System.Text.Encoding.ASCII.GetBytes(command);
+                                    stream.Write(data, 0, data.Length);
+                                }
+                            }
+
+                            last_position_x = hand_position_x;
+                            last_position_y = hand_position_y;
+                            last_position_z = hand_position_z;
+                            last_roll_degrees = roll_degrees;
+                            last_index_IP_degree = index_ip_degree;
+                            last_index_PM_degree = index_pm_degree;
+
+                            System.Threading.Thread.Sleep(10);
                         }
                     }
-
-                    System.Threading.Thread.Sleep(20);
                 }
-
                 //finger_x_plane();
 
 
