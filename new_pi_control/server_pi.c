@@ -50,12 +50,12 @@ pthread_mutex_t raw_data_lock = PTHREAD_MUTEX_INITIALIZER;
 	
 	printf("Set Servo Driver...\n");
 	
-	//init_PCA9685(MOTORADDRESS);
-	//set_PWM_frequency_PCA9685(MOTORADDRESS, MOTOR_FREQUENCY);
-	//stop_DC_motor(MOTORADDRESS, 0);
-	//stop_DC_motor(MOTORADDRESS, 1);
-	//stop_DC_motor(MOTORADDRESS, 2);
-	//stop_DC_motor(MOTORADDRESS, 3);
+	init_PCA9685(MOTORADDRESS);
+	set_PWM_frequency_PCA9685(MOTORADDRESS, MOTOR_FREQUENCY);
+	stop_DC_motor(MOTORADDRESS, 0);
+	stop_DC_motor(MOTORADDRESS, 1);
+	stop_DC_motor(MOTORADDRESS, 2);
+	stop_DC_motor(MOTORADDRESS, 3); 
 	
 	printf("Set Motor Driver...\n");
   
@@ -115,6 +115,7 @@ pthread_mutex_t raw_data_lock = PTHREAD_MUTEX_INITIALIZER;
 				printf("-----------------------\n");
 				raw_curr = raw_head;
 				int counter = 0;
+
 				while(raw_curr != NULL){
 					//printf("old data: %s\n", raw_curr->data);
 					raw_curr = raw_curr->next;
@@ -181,18 +182,23 @@ pthread_mutex_t raw_data_lock = PTHREAD_MUTEX_INITIALIZER;
 
 	int roll_degree; 
 
+
+	//inital set up to all middle positions
+    set_servo(SERVOHATADDR, PM_CHANNEL , SERVO_FREQUENCY, 90);
+	set_servo(SERVOHATADDR, IP_CHANNEL , SERVO_FREQUENCY, 90);
+	set_servo(SERVOHATADDR, FW_CHANNEL , SERVO_FREQUENCY, 0);
+	set_servo(SERVOHATADDR, BW_CHANNEL , SERVO_FREQUENCY, 0);
+	set_servo(SERVOHATADDR, RT_CHANNEL , SERVO_FREQUENCY, 0);
+	set_servo(SERVOHATADDR, LF_CHANNEL , SERVO_FREQUENCY, 0);
+	set_servo(SERVOHATADDR, UD_CHANNEL , SERVO_FREQUENCY, 90);
+	set_servo(SERVOHATADDR, FB_CHANNEL , SERVO_FREQUENCY, 90);
+	set_servo(SERVOHATADDR, LR_CHANNEL , SERVO_FREQUENCY, 90);
+	set_servo(SERVOHATADDR, RO_CHANNEL , SERVO_FREQUENCY, 90);
+
+
 	while(1){
+		
 		raw_curr = raw_head;
-		/*
-		set_servo(SERVOHATADDR, CHANNELTEST, SERVO_FREQUENCY, 0);
-		sleep(1);
-		set_servo(SERVOHATADDR, CHANNELTEST, SERVO_FREQUENCY, 90);
-		sleep(1);
-		set_servo(SERVOHATADDR, CHANNELTEST, SERVO_FREQUENCY, 180);	
-		sleep(1);
-		set_servo(SERVOHATADDR, CHANNELTEST, SERVO_FREQUENCY, 90);
-		sleep(1);
-		*/
 		
 		if(raw_curr != NULL){
 			pthread_mutex_lock(&raw_data_lock);
@@ -226,15 +232,14 @@ pthread_mutex_t raw_data_lock = PTHREAD_MUTEX_INITIALIZER;
 						&roll_degree
 					   );
 				/*
-				bzero(data, BUFFER_SIZE);
 				printf("pm_degree: %d\n", pm_degree);
 				printf("ip_degree: %d\n", ip_degree);
-				printf("rightward_displacement: %d\n", rightward_displacement);
 				printf("hand_x_position: %d\n", hand_x_position);
 				printf("hand_y_position: %d\n", hand_y_position);
 				printf("hand_z_position: %d\n", hand_z_position);
-				printf("roll_degree: %d\n", roll_degree);	
+				printf("roll_degree: %d\n", roll_degree);
 				*/
+
 				if(hand_x_position > 90)
 					hand_x_position = 90;
 				else if (hand_x_position < -90)
@@ -276,58 +281,32 @@ pthread_mutex_t raw_data_lock = PTHREAD_MUTEX_INITIALIZER;
 					pm_degree = -90;
 
 				pm_degree += 90;
+
 				/*
 				printf("pm_degree: %d\n", pm_degree);
 				printf("ip_degree: %d\n", ip_degree);
-				printf("rightward_displacement: %d\n", rightward_displacement);
 				printf("hand_x_position: %d\n", hand_x_position);
 				printf("hand_y_position: %d\n", hand_y_position);
 				printf("hand_z_position: %d\n", hand_z_position);
-				printf("roll_degree: %d\n", roll_degree);	
+				printf("roll_degree: %d\n", roll_degree);
 				*/
-				//if(i == 0){
-					//printf("send thumb command...\n");
-					set_servo(SERVOHATADDR, PM_CHANNEL , SERVO_FREQUENCY, pm_degree);
-					set_servo(SERVOHATADDR, IP_CHANNEL , SERVO_FREQUENCY, ip_degree);
-					set_servo(SERVOHATADDR, FW_CHANNEL , SERVO_FREQUENCY, 5);
-					set_servo(SERVOHATADDR, BW_CHANNEL , SERVO_FREQUENCY, 5);
-					set_servo(SERVOHATADDR, RT_CHANNEL , SERVO_FREQUENCY, 5);
-					set_servo(SERVOHATADDR, LF_CHANNEL , SERVO_FREQUENCY, 5);
-					set_servo(SERVOHATADDR, UD_CHANNEL , SERVO_FREQUENCY, hand_x_position);
-					set_servo(SERVOHATADDR, FB_CHANNEL , SERVO_FREQUENCY, hand_y_position);
-					set_servo(SERVOHATADDR, LR_CHANNEL , SERVO_FREQUENCY, hand_z_position);
-					set_servo(SERVOHATADDR, RO_CHANNEL , SERVO_FREQUENCY, roll_degree);
-				/*}
-				else if(i == 1){
-					//printf("send index command...\n");
-					set_servo(SERVOHATADDR, PM_CHANNEL , SERVO_FREQUENCY, pm_degree);
-					set_servo(SERVOHATADDR, IP_CHANNEL , SERVO_FREQUENCY, ip_degree);
-					set_servo(SERVOHATADDR, FW_CHANNEL , SERVO_FREQUENCY, 5);
-					set_servo(SERVOHATADDR, BW_CHANNEL , SERVO_FREQUENCY, 5);
-					set_servo(SERVOHATADDR, RT_CHANNEL , SERVO_FREQUENCY, 5);
-					set_servo(SERVOHATADDR, LF_CHANNEL , SERVO_FREQUENCY, 5);
-					set_servo(SERVOHATADDR, UD_CHANNEL , SERVO_FREQUENCY, hand_x_position);
-					set_servo(SERVOHATADDR, FB_CHANNEL , SERVO_FREQUENCY, hand_y_position);
-					set_servo(SERVOHATADDR, LR_CHANNEL , SERVO_FREQUENCY, hand_z_position);
-					set_servo(SERVOHATADDR, RO_CHANNEL , SERVO_FREQUENCY, roll_degree);
-				}
-				else if(i == 2){
-					//printf("send middle command...\n");
-					set_servo(SERVOHATADDR, PM_CHANNEL , SERVO_FREQUENCY, pm_degree);
-					set_servo(SERVOHATADDR, IP_CHANNEL , SERVO_FREQUENCY, ip_degree);
-					set_servo(SERVOHATADDR, FW_CHANNEL , SERVO_FREQUENCY, 5);
-					set_servo(SERVOHATADDR, BW_CHANNEL , SERVO_FREQUENCY, 5);
-					set_servo(SERVOHATADDR, RT_CHANNEL , SERVO_FREQUENCY, 5);
-					set_servo(SERVOHATADDR, LF_CHANNEL , SERVO_FREQUENCY, 5);
-					set_servo(SERVOHATADDR, UD_CHANNEL , SERVO_FREQUENCY, hand_x_position);
-					set_servo(SERVOHATADDR, FB_CHANNEL , SERVO_FREQUENCY, hand_y_position);
-					set_servo(SERVOHATADDR, LR_CHANNEL , SERVO_FREQUENCY, hand_z_position);
-					set_servo(SERVOHATADDR, RO_CHANNEL , SERVO_FREQUENCY, roll_degree);
-				}*/
-				//set_servo(SERVOHATADDR, CHANNELTEST, SERVO_FREQUENCY, hand_y_position);		
+
+				set_servo(SERVOHATADDR, PM_CHANNEL , SERVO_FREQUENCY, pm_degree);
+				set_servo(SERVOHATADDR, IP_CHANNEL , SERVO_FREQUENCY, ip_degree);
+				set_servo(SERVOHATADDR, FW_CHANNEL , SERVO_FREQUENCY, 5);
+				set_servo(SERVOHATADDR, BW_CHANNEL , SERVO_FREQUENCY, 5);
+				set_servo(SERVOHATADDR, RT_CHANNEL , SERVO_FREQUENCY, 5);
+				set_servo(SERVOHATADDR, LF_CHANNEL , SERVO_FREQUENCY, 5);
+				set_servo(SERVOHATADDR, UD_CHANNEL , SERVO_FREQUENCY, hand_x_position);
+				set_servo(SERVOHATADDR, FB_CHANNEL , SERVO_FREQUENCY, hand_y_position);
+				set_servo(SERVOHATADDR, LR_CHANNEL , SERVO_FREQUENCY, hand_z_position);
+				set_servo(SERVOHATADDR, RO_CHANNEL , SERVO_FREQUENCY, roll_degree);
+				
+				bzero(data, BUFFER_SIZE);
 				pthread_mutex_unlock(&raw_data_lock);
 			}
     	}
+
     	raw_curr = NULL;
     	raw_prev = NULL;
 	}
