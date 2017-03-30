@@ -26,11 +26,6 @@ namespace LeapPanel
         //private NetworkStream stream;
         private Byte[] data;
 
-        //three fingers: index, middle, pinkle
-        //private Finger[] finger_object = new Finger[3];
-        //private Bone[,] bone_object = new Bone[3, 4];
-        //private bool[] finger_exist = new bool[3];
-
         private Finger thumb;
         private bool thumb_exist;
         private Bone thumb_meta;
@@ -197,9 +192,9 @@ namespace LeapPanel
 
             if (index_meta != null && index_inter != null & index_prox != null)
             {
-                Vector middle_meta_norm = index_meta.Direction.Normalized;
-                Vector middle_prox_norm = index_prox.Direction.Normalized;
-                Vector middle_inter_norm = index_inter.Direction.Normalized;
+                Vector middle_meta_norm = middle_meta.Direction.Normalized;
+                Vector middle_prox_norm = middle_prox.Direction.Normalized;
+                Vector middle_inter_norm = middle_inter.Direction.Normalized;
                 middle_PM_dot = middle_prox_norm.Dot(middle_meta_norm);
                 middle_IP_dot = middle_inter_norm.Dot(middle_prox_norm);
 
@@ -490,7 +485,8 @@ namespace LeapPanel
 
                         if (diff_pm > modulation || diff_ip > modulation || diff_roll > modulation ||
                             diff_hand_position_x > modulation || diff_hand_position_y > modulation ||
-                            diff_hand_position_z > modulation)
+                            diff_hand_position_z > modulation || forward_move != 0  || 
+                            backward_move != 0 || right_move != 0 || left_move != 0)
                         {
                             command = "0" + ":" + ((int)thumb_pm_degree).ToString()
                                        + ":" + ((int)thumb_ip_degree).ToString()
@@ -539,7 +535,8 @@ namespace LeapPanel
 
                         if (diff_pm > modulation || diff_ip > modulation || diff_roll > modulation ||
                             diff_hand_position_x > modulation || diff_hand_position_y > modulation ||
-                            diff_hand_position_z > modulation
+                            diff_hand_position_z > modulation || forward_move != 0  || 
+                            backward_move != 0 || right_move != 0 || left_move != 0
                             ){
                             command = "1" + ":" + ((int)middle_pm_degree).ToString()
                                        + ":" + ((int)middle_ip_degree).ToString()
@@ -588,7 +585,8 @@ namespace LeapPanel
 
                         if (diff_pm > modulation || diff_ip > modulation || diff_roll > modulation ||
                             diff_hand_position_x > modulation || diff_hand_position_y > modulation ||
-                            diff_hand_position_z > modulation
+                            diff_hand_position_z > modulation || forward_move != 0  || 
+                            backward_move != 0 || right_move != 0 || left_move != 0
                             ){
                             command = "2" + ":" + ((int)index_pm_degree).ToString()
                                       + ":" + ((int)index_ip_degree).ToString()
@@ -619,6 +617,87 @@ namespace LeapPanel
                             last_roll_degrees = roll_degrees;
                             last_index_IP_degree = index_ip_degree;
                             last_index_PM_degree = index_pm_degree;
+
+                            System.Threading.Thread.Sleep(10);
+                        }
+                    }
+
+                    if (middle_exist == false && index_exist == false && thumb_exist == false)
+                    {
+                        if (forward_move != 0 || backward_move != 0 || right_move != 0 || left_move != 0)
+                        {
+                            command = "0" + ":" + ((int)last_thumb_PM_degree).ToString()
+                                      + ":" + ((int)last_thumb_IP_degree).ToString()
+                                      + ":" + ((int)forward_move).ToString()
+                                      + ":" + ((int)backward_move).ToString()
+                                      + ":" + ((int)right_move).ToString()
+                                      + ":" + ((int)left_move).ToString()
+                                      + ":" + ((int)last_position_x).ToString()
+                                      + ":" + ((int)last_position_y).ToString()
+                                      + ":" + ((int)last_position_z).ToString()
+                                      + ":" + ((int)last_roll_degrees).ToString();
+
+
+
+                            if (tcpclnt.Connected)
+                            {
+                                NetworkStream stream = tcpclnt.GetStream();
+                                if (command != null)
+                                {
+                                    data = System.Text.Encoding.ASCII.GetBytes(command);
+                                    stream.Write(data, 0, data.Length);
+                                }
+                            }
+
+                            System.Threading.Thread.Sleep(10);
+
+                            command = "0" + ":" + ((int)last_index_PM_degree).ToString()
+                                      + ":" + ((int)last_index_IP_degree).ToString()
+                                      + ":" + ((int)forward_move).ToString()
+                                      + ":" + ((int)backward_move).ToString()
+                                      + ":" + ((int)right_move).ToString()
+                                      + ":" + ((int)left_move).ToString()
+                                      + ":" + ((int)last_position_x).ToString()
+                                      + ":" + ((int)last_position_y).ToString()
+                                      + ":" + ((int)last_position_z).ToString()
+                                      + ":" + ((int)last_roll_degrees).ToString();
+
+
+
+                            if (tcpclnt.Connected)
+                            {
+                                NetworkStream stream = tcpclnt.GetStream();
+                                if (command != null)
+                                {
+                                    data = System.Text.Encoding.ASCII.GetBytes(command);
+                                    stream.Write(data, 0, data.Length);
+                                }
+                            }
+
+                            System.Threading.Thread.Sleep(10);
+
+                            command = "0" + ":" + ((int)last_middle_PM_degree).ToString()
+                                      + ":" + ((int)last_middle_IP_degree).ToString()
+                                      + ":" + ((int)forward_move).ToString()
+                                      + ":" + ((int)backward_move).ToString()
+                                      + ":" + ((int)right_move).ToString()
+                                      + ":" + ((int)left_move).ToString()
+                                      + ":" + ((int)last_position_x).ToString()
+                                      + ":" + ((int)last_position_y).ToString()
+                                      + ":" + ((int)last_position_z).ToString()
+                                      + ":" + ((int)last_roll_degrees).ToString();
+
+
+
+                            if (tcpclnt.Connected)
+                            {
+                                NetworkStream stream = tcpclnt.GetStream();
+                                if (command != null)
+                                {
+                                    data = System.Text.Encoding.ASCII.GetBytes(command);
+                                    stream.Write(data, 0, data.Length);
+                                }
+                            }
 
                             System.Threading.Thread.Sleep(10);
                         }
@@ -732,6 +811,11 @@ namespace LeapPanel
         private void setArrowKeyTextBox(TextBox target)
         {
             target.Text = "Pressed";
+        }
+
+        private void middle_IP_TextChanged(object sender, EventArgs e)
+        {
+
         }
  
     }

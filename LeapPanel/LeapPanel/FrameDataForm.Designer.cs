@@ -646,6 +646,7 @@
             this.middle_IP.Size = new System.Drawing.Size(57, 28);
             this.middle_IP.TabIndex = 104;
             this.middle_IP.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            this.middle_IP.TextChanged += new System.EventHandler(this.middle_IP_TextChanged);
             // 
             // label31
             // 
