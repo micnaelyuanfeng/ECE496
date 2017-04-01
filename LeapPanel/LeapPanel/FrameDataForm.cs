@@ -728,6 +728,15 @@ namespace LeapPanel
             backward_move = 0;
             left_move = 0;
             right_move = 0;
+
+            //reset textboxs
+            if (this.InvokeRequired)
+            {
+                var reset_routine = new VoidDelegate(resetArrowKeyTextBox);
+                this.Invoke(reset_routine);
+            }
+            else
+                this.resetArrowKeyTextBox();
          }
 
         public float ToDegrees(float Radian)
@@ -808,10 +817,18 @@ namespace LeapPanel
             ke.SuppressKeyPress = true;
         }
         private delegate void keyEventDelegate(TextBox target);
-
+        private delegate void VoidDelegate();
         private void setArrowKeyTextBox(TextBox target)
         {
             target.Text = "Pressed";
+        }
+        private void resetArrowKeyTextBox()
+        {
+            this.up_key.Text = "";
+            this.down_key.Text = "";
+            this.left_key.Text = "";
+            this.right_key.Text = "";
+
         }
 
         private void middle_IP_TextChanged(object sender, EventArgs e)
