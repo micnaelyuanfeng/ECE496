@@ -773,7 +773,7 @@ namespace LeapPanel
             {
                 upKeyPressed = true;
                 forward_move = 5;
-                if (InvokeRequired)
+                if (this.InvokeRequired)
                     this.Invoke(handler, this.up_key);
                 else
                     setArrowKeyTextBox(this.up_key);
@@ -782,7 +782,7 @@ namespace LeapPanel
             {
                 downKeyPressed = true;
                 backward_move = 5;
-                if (InvokeRequired)
+                if (this.InvokeRequired)
                     this.Invoke(handler, this.down_key);
                 else
                     setArrowKeyTextBox(this.down_key);
@@ -791,7 +791,7 @@ namespace LeapPanel
             {
                 leftKeyPressed = true;
                 left_move = 5;
-                if (InvokeRequired)
+                if (this.InvokeRequired)
                     this.Invoke(handler, this.left_key);
                 else
                     setArrowKeyTextBox(this.left_key);
@@ -800,11 +800,12 @@ namespace LeapPanel
             {
                 rightKeyPressed = true;
                 right_move = 5;
-                if (InvokeRequired)
+                if (this.InvokeRequired)
                     this.Invoke(handler, this.right_key);
                 else
                     setArrowKeyTextBox(this.right_key);
             }
+            ke.SuppressKeyPress = true;
         }
         private delegate void keyEventDelegate(TextBox target);
 
