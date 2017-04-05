@@ -44,11 +44,13 @@ namespace LeapPanel
         private Bone middle_prox;
         private Bone middle_inter;
         private bool middle_exist;
+        private int direction = 0;
 
         private int forward_move = 0;
         private int backward_move = 0;
         private int left_move = 0;
         private int right_move = 0;
+        private int stop_move = 0;
 
         #region Key press Bools
         private bool upKeyPressed = false;
@@ -57,7 +59,7 @@ namespace LeapPanel
         private bool rightKeyPressed = false;
         #endregion
 
-        private int modulation = 3;
+        private int modulation = 25;
 
         int hand_position_x;
         int hand_position_y; 
@@ -104,14 +106,14 @@ namespace LeapPanel
         {
             InitializeComponent();
 
-            ServerIPTextbox.Text = "192.168.1.244";
+            ServerIPTextbox.Text = "192.168.1.205";
             PortNumber.Text = "2050";
             //wifi connection
             try
             {
                 tcpclnt = new TcpClient();
                 //Console.WriteLine("Connecting to the server[{0}]", "192.168.1.244");
-                tcpclnt.Connect("192.168.1.83", 2050);
+                tcpclnt.Connect("192.168.1.205", 2050);
                 //MessageBox.Show("Connected");
                 //textBox5.Text = "Connected";
                 //richTextBox.AppendText("Connected" + Environment.NewLine);
@@ -387,13 +389,13 @@ namespace LeapPanel
                     Vector normal = hand.PalmNormal;
 
                     roll = hand.PalmNormal.Roll;
-                    roll_degrees = (int)ToDegrees(roll);
+                    roll_degrees = (int)ToDegrees(roll) * (-1);
 
                     richTextBox3.Text = roll_degrees.ToString();
 
-                    hand_position_x = (int)position.x;
-                    hand_position_y = (int)position.y;
-                    hand_position_z = (int)position.z;
+                    hand_position_x = (int)position.x * (-1);
+                    hand_position_y = (int)(position.y * 0.6);
+                    hand_position_z = (int)(position.z * (0.6)) ;
 
 
                     if(last_position_x != (int)hand_position_x)
@@ -486,7 +488,7 @@ namespace LeapPanel
                         if (diff_pm > modulation || diff_ip > modulation || diff_roll > modulation ||
                             diff_hand_position_x > modulation || diff_hand_position_y > modulation ||
                             diff_hand_position_z > modulation || forward_move != 0  || 
-                            backward_move != 0 || right_move != 0 || left_move != 0)
+                            backward_move != 0 || right_move != 0 || left_move != 0 || stop_move != 0)
                         {
                             command = "0" + ":" + ((int)thumb_pm_degree).ToString()
                                        + ":" + ((int)thumb_ip_degree).ToString()
@@ -497,7 +499,8 @@ namespace LeapPanel
                                        + ":" + ((int)hand_position_x).ToString()
                                        + ":" + ((int)hand_position_y).ToString()
                                        + ":" + ((int)hand_position_z).ToString()
-                                       + ":" + ((int)roll_degrees).ToString();
+                                       + ":" + ((int)roll_degrees).ToString()
+                                       + ":" + direction.ToString();
                             //add move command from keyboard
                             //add finger 1 and finger 2 data
 
@@ -535,8 +538,8 @@ namespace LeapPanel
 
                         if (diff_pm > modulation || diff_ip > modulation || diff_roll > modulation ||
                             diff_hand_position_x > modulation || diff_hand_position_y > modulation ||
-                            diff_hand_position_z > modulation || forward_move != 0  || 
-                            backward_move != 0 || right_move != 0 || left_move != 0
+                            diff_hand_position_z > modulation || forward_move != 0  ||
+                            backward_move != 0 || right_move != 0 || left_move != 0 || stop_move != 0
                             ){
                             command = "1" + ":" + ((int)middle_pm_degree).ToString()
                                        + ":" + ((int)middle_ip_degree).ToString()
@@ -547,7 +550,8 @@ namespace LeapPanel
                                        + ":" + ((int)hand_position_x).ToString()
                                        + ":" + ((int)hand_position_y).ToString()
                                        + ":" + ((int)hand_position_z).ToString()
-                                       + ":" + ((int)roll_degrees).ToString();
+                                       + ":" + ((int)roll_degrees).ToString()
+                                       + ":" + direction.ToString();
 
                             if (tcpclnt.Connected)
                             {
@@ -585,8 +589,8 @@ namespace LeapPanel
 
                         if (diff_pm > modulation || diff_ip > modulation || diff_roll > modulation ||
                             diff_hand_position_x > modulation || diff_hand_position_y > modulation ||
-                            diff_hand_position_z > modulation || forward_move != 0  || 
-                            backward_move != 0 || right_move != 0 || left_move != 0
+                            diff_hand_position_z > modulation || forward_move != 0  ||
+                            backward_move != 0 || right_move != 0 || left_move != 0 || stop_move != 0
                             ){
                             command = "2" + ":" + ((int)index_pm_degree).ToString()
                                       + ":" + ((int)index_ip_degree).ToString()
@@ -597,7 +601,8 @@ namespace LeapPanel
                                       + ":" + ((int)hand_position_x).ToString()
                                       + ":" + ((int)hand_position_y).ToString()
                                       + ":" + ((int)hand_position_z).ToString()
-                                      + ":" + ((int)roll_degrees).ToString();
+                                      + ":" + ((int)roll_degrees).ToString()
+                                      + ":" + direction.ToString();
 
 
 
@@ -624,7 +629,7 @@ namespace LeapPanel
 
                     if (middle_exist == false && index_exist == false && thumb_exist == false)
                     {
-                        if (forward_move != 0 || backward_move != 0 || right_move != 0 || left_move != 0)
+                        if (forward_move != 0 || backward_move != 0 || right_move != 0 || left_move != 0 || stop_move != 0)
                         {
                             command = "0" + ":" + ((int)last_thumb_PM_degree).ToString()
                                       + ":" + ((int)last_thumb_IP_degree).ToString()
@@ -635,7 +640,8 @@ namespace LeapPanel
                                       + ":" + ((int)last_position_x).ToString()
                                       + ":" + ((int)last_position_y).ToString()
                                       + ":" + ((int)last_position_z).ToString()
-                                      + ":" + ((int)last_roll_degrees).ToString();
+                                      + ":" + ((int)last_roll_degrees).ToString()
+                                      + ":" + direction.ToString();
 
 
 
@@ -660,7 +666,8 @@ namespace LeapPanel
                                       + ":" + ((int)last_position_x).ToString()
                                       + ":" + ((int)last_position_y).ToString()
                                       + ":" + ((int)last_position_z).ToString()
-                                      + ":" + ((int)last_roll_degrees).ToString();
+                                      + ":" + ((int)last_roll_degrees).ToString()
+                                      + ":" + direction.ToString();
 
 
 
@@ -685,7 +692,8 @@ namespace LeapPanel
                                       + ":" + ((int)last_position_x).ToString()
                                       + ":" + ((int)last_position_y).ToString()
                                       + ":" + ((int)last_position_z).ToString()
-                                      + ":" + ((int)last_roll_degrees).ToString();
+                                      + ":" + ((int)last_roll_degrees).ToString()
+                                      + ":" + direction.ToString();
 
 
 
@@ -718,6 +726,7 @@ namespace LeapPanel
             down_key.Text = " ";
             left_key.Text = " ";
             right_key.Text = " ";
+            stop_key.Text = " ";
 
             upKeyPressed = false;
             downKeyPressed = false;
@@ -728,15 +737,9 @@ namespace LeapPanel
             backward_move = 0;
             left_move = 0;
             right_move = 0;
+            stop_move = 0;
 
-            //reset textboxs
-            if (this.InvokeRequired)
-            {
-                var reset_routine = new VoidDelegate(resetArrowKeyTextBox);
-                this.Invoke(reset_routine);
-            }
-            else
-                this.resetArrowKeyTextBox();
+            direction = 0;
          }
 
         public float ToDegrees(float Radian)
@@ -781,8 +784,9 @@ namespace LeapPanel
             if(ke.KeyCode==Keys.Up)
             {
                 upKeyPressed = true;
+                direction = 1;
                 forward_move = 5;
-                if (this.InvokeRequired)
+                if (InvokeRequired)
                     this.Invoke(handler, this.up_key);
                 else
                     setArrowKeyTextBox(this.up_key);
@@ -790,8 +794,9 @@ namespace LeapPanel
             else if(ke.KeyCode==Keys.Down)
             {
                 downKeyPressed = true;
+                direction = 2;
                 backward_move = 5;
-                if (this.InvokeRequired)
+                if (InvokeRequired)
                     this.Invoke(handler, this.down_key);
                 else
                     setArrowKeyTextBox(this.down_key);
@@ -799,8 +804,9 @@ namespace LeapPanel
             else if(ke.KeyCode==Keys.Left)
             {
                 leftKeyPressed = true;
+                direction = 3;
                 left_move = 5;
-                if (this.InvokeRequired)
+                if (InvokeRequired)
                     this.Invoke(handler, this.left_key);
                 else
                     setArrowKeyTextBox(this.left_key);
@@ -808,27 +814,30 @@ namespace LeapPanel
             else if(ke.KeyCode==Keys.Right)
             {
                 rightKeyPressed = true;
+                direction = 4;
                 right_move = 5;
-                if (this.InvokeRequired)
+                if (InvokeRequired)
                     this.Invoke(handler, this.right_key);
                 else
                     setArrowKeyTextBox(this.right_key);
             }
+            else if (ke.KeyCode == Keys.Space)
+            {
+                downKeyPressed = true;
+                direction = 5;
+                stop_move = 5;
+                if (InvokeRequired)
+                    this.Invoke(handler, this.stop_key);
+                else
+                    setArrowKeyTextBox(this.stop_key);
+            }
             ke.SuppressKeyPress = true;
         }
         private delegate void keyEventDelegate(TextBox target);
-        private delegate void VoidDelegate();
+
         private void setArrowKeyTextBox(TextBox target)
         {
             target.Text = "Pressed";
-        }
-        private void resetArrowKeyTextBox()
-        {
-            this.up_key.Text = "";
-            this.down_key.Text = "";
-            this.left_key.Text = "";
-            this.right_key.Text = "";
-
         }
 
         private void middle_IP_TextChanged(object sender, EventArgs e)

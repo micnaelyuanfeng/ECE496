@@ -94,6 +94,7 @@
             this.label7 = new System.Windows.Forms.Label();
             this.label8 = new System.Windows.Forms.Label();
             this.label13 = new System.Windows.Forms.Label();
+            this.stop_key = new System.Windows.Forms.TextBox();
             this.SuspendLayout();
             // 
             // richTextBox
@@ -827,7 +828,7 @@
             this.up_key.BackColor = System.Drawing.Color.Chartreuse;
             this.up_key.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.up_key.ForeColor = System.Drawing.SystemColors.Highlight;
-            this.up_key.Location = new System.Drawing.Point(628, 271);
+            this.up_key.Location = new System.Drawing.Point(629, 271);
             this.up_key.Margin = new System.Windows.Forms.Padding(1);
             this.up_key.Multiline = true;
             this.up_key.Name = "up_key";
@@ -879,11 +880,19 @@
             this.label13.TabIndex = 124;
             this.label13.Text = "UP";
             // 
+            // stop_key
+            // 
+            this.stop_key.Location = new System.Drawing.Point(628, 213);
+            this.stop_key.Name = "stop_key";
+            this.stop_key.Size = new System.Drawing.Size(58, 20);
+            this.stop_key.TabIndex = 125;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(826, 489);
+            this.Controls.Add(this.stop_key);
             this.Controls.Add(this.label13);
             this.Controls.Add(this.label8);
             this.Controls.Add(this.label7);
@@ -1028,6 +1037,7 @@
         private System.Windows.Forms.Label label7;
         private System.Windows.Forms.Label label8;
         private System.Windows.Forms.Label label13;
+        private System.Windows.Forms.TextBox stop_key;
     }
 }
 
